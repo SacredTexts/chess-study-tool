@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.10.2] - 2026-01-26
+
+### Fixed
+- **Stockfish FEN validation error** - Vision API sometimes returns FEN with only piece placement (missing turn, castling, etc.)
+  - Now normalizes FEN before validation to add missing fields with defaults
+  - Uses turn from Vision response when FEN only has piece placement
+
+### Changed
+- **Provider comparison limit** - Can now select 1 or 2 providers for comparison (was unlimited)
+  - Unchecked providers are disabled when 2 are already selected
+  - Added hint text in settings explaining the limit
+
 ## [2.10.1] - 2026-01-27
 
 ### Fixed
