@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chess Study Tool - AI Analysis",
-  "version": "2.10.1",
+  "version": "2.10.2",
   "description": "Standalone chess learning tool - captures screenshots and provides AI-powered analysis. No interaction with chess websites.",
 
   "permissions": [

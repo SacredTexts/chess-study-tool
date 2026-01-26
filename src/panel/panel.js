@@ -164,6 +164,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   viewDebugLogsBtn.addEventListener('click', viewDebugLogs);
   downloadDebugLogsBtn.addEventListener('click', downloadDebugLogs);
   clearDebugLogsBtn.addEventListener('click', clearDebugLogs);
+
+  // Compare checkbox handlers - limit to max 2 providers
+  anthropicCompare.addEventListener('change', () => enforceCompareLimit('anthropic'));
+  openrouterCompare.addEventListener('change', () => enforceCompareLimit('openrouter'));
+  bigmodelCompare.addEventListener('change', () => enforceCompareLimit('bigmodel'));
 });
 
 // Update board labels based on orientation
@@ -175,6 +180,58 @@ function updateBoardOrientation() {
     boardRanks.innerHTML = '<span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>';
     boardFiles.innerHTML = '<span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>';
   }
+}
+
+// Maximum providers that can be selected for comparison
+const MAX_COMPARE_PROVIDERS = 2;
+
+// Enforce limit of 2 providers for comparison
+function enforceCompareLimit(changedProvider) {
+  const checkboxes = {
+    anthropic: anthropicCompare,
+    openrouter: openrouterCompare,
+    bigmodel: bigmodelCompare
+  };
+
+  const checkedProviders = [];
+  for (const [provider, checkbox] of Object.entries(checkboxes)) {
+    if (checkbox.checked) {
+      checkedProviders.push(provider);
+    }
+  }
+
+  // If more than 2 are checked, uncheck the oldest one (not the one just changed)
+  if (checkedProviders.length > MAX_COMPARE_PROVIDERS) {
+    // Uncheck the first one that isn't the one just changed
+    for (const provider of checkedProviders) {
+      if (provider !== changedProvider) {
+        checkboxes[provider].checked = false;
+        break;
+      }
+    }
+  }
+
+  // Update disabled state - disable unchecked boxes when at limit
+  updateCompareCheckboxStates();
+}
+
+// Update disabled state of compare checkboxes based on selection count
+function updateCompareCheckboxStates() {
+  const checkboxes = [anthropicCompare, openrouterCompare, bigmodelCompare];
+  const checkedCount = checkboxes.filter(cb => cb.checked).length;
+
+  // Disable unchecked boxes when at the limit
+  checkboxes.forEach(cb => {
+    if (!cb.checked && checkedCount >= MAX_COMPARE_PROVIDERS) {
+      cb.disabled = true;
+      cb.parentElement.style.opacity = '0.5';
+      cb.parentElement.title = `Max ${MAX_COMPARE_PROVIDERS} providers can be compared`;
+    } else {
+      cb.disabled = false;
+      cb.parentElement.style.opacity = '1';
+      cb.parentElement.title = '';
+    }
+  });
 }
 
 // ============================================================================
@@ -224,10 +281,14 @@ async function loadSettings() {
   // Update default provider stars
   updateDefaultProviderUI(settings.defaultProvider);
 
-  // Update compare checkboxes
-  anthropicCompare.checked = settings.compareProviders.includes('anthropic');
-  openrouterCompare.checked = settings.compareProviders.includes('openrouter');
-  bigmodelCompare.checked = settings.compareProviders.includes('bigmodel');
+  // Update compare checkboxes (limit to MAX_COMPARE_PROVIDERS)
+  const compareList = settings.compareProviders.slice(0, MAX_COMPARE_PROVIDERS);
+  anthropicCompare.checked = compareList.includes('anthropic');
+  openrouterCompare.checked = compareList.includes('openrouter');
+  bigmodelCompare.checked = compareList.includes('bigmodel');
+
+  // Update disabled states based on selection count
+  updateCompareCheckboxStates();
 }
 
 function updateDefaultProviderUI(defaultProvider) {
