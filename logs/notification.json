@@ -38,5 +38,45 @@
     "hook_event_name": "Notification",
     "message": "Claude is waiting for your input",
     "notification_type": "idle_prompt"
+  },
+  {
+    "session_id": "196bccc8-6e26-438d-a15e-5e1c6de53d62",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "hook_event_name": "Notification",
+    "message": "Claude is waiting for your input",
+    "notification_type": "idle_prompt"
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "hook_event_name": "Notification",
+    "message": "Claude is waiting for your input",
+    "notification_type": "idle_prompt"
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "hook_event_name": "Notification",
+    "message": "Claude is waiting for your input",
+    "notification_type": "idle_prompt"
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "hook_event_name": "Notification",
+    "message": "Claude is waiting for your input",
+    "notification_type": "idle_prompt"
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "hook_event_name": "Notification",
+    "message": "Claude is waiting for your input",
+    "notification_type": "idle_prompt"
   }
 ]

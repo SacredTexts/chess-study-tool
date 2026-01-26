@@ -1065,9 +1065,142 @@
       color: #888;
       margin-top: 16px;
     }
-    
+
     .notice strong {
       color: #3498db;
+    }
+
+    /* ============ PROVIDER SECTION ============ */
+    .provider-section {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .provider-section.is-default {
+      border-color: rgba(46, 204, 113, 0.4);
+    }
+
+    .provider-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .provider-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+    }
+
+    .provider-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .provider-star {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #555;
+      padding: 4px;
+      transition: all 0.2s;
+      line-height: 1;
+    }
+
+    .provider-star:hover {
+      color: #f1c40f;
+    }
+
+    .provider-star.active {
+      color: #f1c40f;
+    }
+
+    .provider-star.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .provider-compare {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .provider-compare input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #3498db;
+    }
+
+    .provider-compare-label {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .provider-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ============ MODEL COMPARISON RESULTS ============ */
+    .comparison-box {
+      background: rgba(52, 152, 219, 0.1);
+      border: 1px solid rgba(52, 152, 219, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .comparison-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #3498db;
+      margin-bottom: 10px;
+    }
+
+    .comparison-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 12px;
+    }
+
+    .comparison-item.agree {
+      color: #2ecc71;
+    }
+
+    .comparison-item.disagree {
+      color: #f39c12;
+    }
+
+    .comparison-icon {
+      font-size: 14px;
+    }
+
+    .comparison-default {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      color: #888;
+    }
+
+    .comparison-default .default-star {
+      color: #f1c40f;
     }
     
     /* ============ SCROLLBAR ============ */
@@ -1082,7 +1215,7 @@
     <div class="header-title">
       <span class="icon">♟️</span>
       <h1>Chess Study Tool</h1>
-      <span class="version-badge">v2.9.0</span>
+      <span class="version-badge">v2.10.1</span>
     </div>
     <div class="header-right">
       <div class="header-indicators" title="API Status">
@@ -1146,6 +1279,13 @@
         <span id="turn-display">-</span>
       </div>
     </div>
+
+    <!-- Model Comparison Results -->
+    <div class="comparison-box" id="comparison-box" style="display: none;">
+      <div class="comparison-title">Model Agreement</div>
+      <div id="comparison-results"></div>
+      <div class="comparison-default" id="comparison-default"></div>
+    </div>
     
     <!-- Best Moves -->
     <div class="section" id="moves-section" style="display: none;">
@@ -1202,40 +1342,123 @@
   <div class="settings-panel" id="settings-panel">
     <button class="back-btn" id="back-btn">← Back to Analysis</button>
     
-    <div class="section">
-      <div class="section-title">API Provider</div>
-      <div class="form-group">
-        <label for="api-provider">Provider</label>
-        <select id="api-provider">
-          <option value="anthropic">Anthropic (Direct)</option>
-          <option value="openrouter">OpenRouter.ai</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="api-model">Model</label>
-        <select id="api-model">
-          <option value="claude-opus-4-5-20251101">Claude Opus 4.5 (Best Accuracy)</option>
-          <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Balanced)</option>
-          <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Faster/Cheaper)</option>
-        </select>
-        <p class="form-hint">Opus 4.5 is best for accurate board recognition. Sonnet is a good balance of speed and accuracy.</p>
-      </div>
-      <div class="form-group">
-        <label for="api-key">API Key</label>
-        <div class="api-key-wrapper">
-          <input type="password" id="api-key" placeholder="sk-ant-api03-...">
-          <button type="button" class="toggle-key-btn" id="toggle-key-btn" title="Show/Hide API Key">
-            <svg class="eye-icon eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <svg class="eye-icon eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-              <line x1="1" y1="1" x2="23" y2="23"/>
-            </svg>
-          </button>
+    <!-- ANTHROPIC PROVIDER -->
+    <div class="provider-section" id="anthropic-section" data-provider="anthropic">
+      <div class="provider-header">
+        <span class="provider-title">Anthropic (Direct)</span>
+        <div class="provider-controls">
+          <button class="provider-star active" id="anthropic-star" title="Set as default">★</button>
+          <label class="provider-compare">
+            <input type="checkbox" id="anthropic-compare" checked>
+            <span class="provider-compare-label">Compare</span>
+          </label>
         </div>
-        <p class="form-hint" id="api-key-hint">Get your key at <a href="https://console.anthropic.com/" target="_blank" style="color: #3498db;">console.anthropic.com</a></p>
+      </div>
+      <div class="provider-content">
+        <div class="form-group">
+          <label for="anthropic-model">Model</label>
+          <select id="anthropic-model">
+            <option value="claude-opus-4-5-20251101">Claude Opus 4.5 (Best Accuracy)</option>
+            <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Balanced)</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Faster/Cheaper)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="anthropic-key">API Key</label>
+          <div class="api-key-wrapper">
+            <input type="password" id="anthropic-key" placeholder="sk-ant-api03-...">
+            <button type="button" class="toggle-key-btn" data-target="anthropic-key" title="Show/Hide API Key">
+              <svg class="eye-icon eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="eye-icon eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+          <p class="form-hint">Get your key at <a href="https://console.anthropic.com/" target="_blank" style="color: #3498db;">console.anthropic.com</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPENROUTER PROVIDER -->
+    <div class="provider-section" id="openrouter-section" data-provider="openrouter">
+      <div class="provider-header">
+        <span class="provider-title">OpenRouter</span>
+        <div class="provider-controls">
+          <button class="provider-star" id="openrouter-star" title="Set as default">☆</button>
+          <label class="provider-compare">
+            <input type="checkbox" id="openrouter-compare">
+            <span class="provider-compare-label">Compare</span>
+          </label>
+        </div>
+      </div>
+      <div class="provider-content">
+        <div class="form-group">
+          <label for="openrouter-model">Model</label>
+          <select id="openrouter-model">
+            <option value="google/gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="openrouter-key">API Key</label>
+          <div class="api-key-wrapper">
+            <input type="password" id="openrouter-key" placeholder="sk-or-v1-...">
+            <button type="button" class="toggle-key-btn" data-target="openrouter-key" title="Show/Hide API Key">
+              <svg class="eye-icon eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="eye-icon eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+          <p class="form-hint">Get your key at <a href="https://openrouter.ai/" target="_blank" style="color: #3498db;">openrouter.ai</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BIGMODEL (ZHIPU AI) PROVIDER -->
+    <div class="provider-section" id="bigmodel-section" data-provider="bigmodel">
+      <div class="provider-header">
+        <span class="provider-title">BigModel (Zhipu AI)</span>
+        <div class="provider-controls">
+          <button class="provider-star" id="bigmodel-star" title="Set as default">☆</button>
+          <label class="provider-compare">
+            <input type="checkbox" id="bigmodel-compare">
+            <span class="provider-compare-label">Compare</span>
+          </label>
+        </div>
+      </div>
+      <div class="provider-content">
+        <div class="form-group">
+          <label for="bigmodel-model">Model</label>
+          <select id="bigmodel-model">
+            <option value="glm-4v">GLM-4V</option>
+            <option value="glm-4v-plus">GLM-4V Plus</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="bigmodel-key">API Key</label>
+          <div class="api-key-wrapper">
+            <input type="password" id="bigmodel-key" placeholder="your-api-key...">
+            <button type="button" class="toggle-key-btn" data-target="bigmodel-key" title="Show/Hide API Key">
+              <svg class="eye-icon eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg class="eye-icon eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+          <p class="form-hint">Get your key at <a href="https://bigmodel.cn/" target="_blank" style="color: #3498db;">bigmodel.cn</a></p>
+        </div>
       </div>
     </div>
     
@@ -1302,9 +1525,25 @@
       </div>
     </div>
 
+    <!-- Debug Logs Section -->
+    <div class="settings-group">
+      <h3>Debug Logs</h3>
+      <p style="font-size: 11px; color: #888; margin-bottom: 8px;">
+        View detailed API responses for troubleshooting Vision issues.
+      </p>
+      <div style="display: flex; gap: 8px;">
+        <button class="check-btn" id="view-debug-logs-btn">View Logs</button>
+        <button class="check-btn" id="download-debug-logs-btn">Download</button>
+        <button class="check-btn" id="clear-debug-logs-btn" style="background: #555;">Clear</button>
+      </div>
+      <div class="debug-log-viewer" id="debug-log-viewer" style="display: none; margin-top: 10px;">
+        <div class="debug-log-content" id="debug-log-content" style="max-height: 300px; overflow-y: auto; background: #1a1a2e; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all;"></div>
+      </div>
+    </div>
+
     <!-- Version Footer -->
     <div class="settings-footer">
-      <span class="settings-version">Chess Study Tool v2.9.0</span>
+      <span class="settings-version">Chess Study Tool v2.10.1</span>
       <span class="settings-credits">Powered by Claude Vision & Lichess</span>
     </div>
   </div>

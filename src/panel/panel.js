@@ -36,11 +36,30 @@ const mainContent = document.getElementById('main-content');
 const backBtn = document.getElementById('back-btn');
 const saveBtn = document.getElementById('save-btn');
 
-const apiKeyInput = document.getElementById('api-key');
-const apiProviderSelect = document.getElementById('api-provider');
-const apiModelSelect = document.getElementById('api-model');
-const apiKeyHint = document.getElementById('api-key-hint');
-const toggleKeyBtn = document.getElementById('toggle-key-btn');
+// Provider section elements
+const anthropicSection = document.getElementById('anthropic-section');
+const anthropicStar = document.getElementById('anthropic-star');
+const anthropicCompare = document.getElementById('anthropic-compare');
+const anthropicModel = document.getElementById('anthropic-model');
+const anthropicKey = document.getElementById('anthropic-key');
+
+const openrouterSection = document.getElementById('openrouter-section');
+const openrouterStar = document.getElementById('openrouter-star');
+const openrouterCompare = document.getElementById('openrouter-compare');
+const openrouterModel = document.getElementById('openrouter-model');
+const openrouterKey = document.getElementById('openrouter-key');
+
+const bigmodelSection = document.getElementById('bigmodel-section');
+const bigmodelStar = document.getElementById('bigmodel-star');
+const bigmodelCompare = document.getElementById('bigmodel-compare');
+const bigmodelModel = document.getElementById('bigmodel-model');
+const bigmodelKey = document.getElementById('bigmodel-key');
+
+// Comparison box
+const comparisonBox = document.getElementById('comparison-box');
+const comparisonResults = document.getElementById('comparison-results');
+const comparisonDefault = document.getElementById('comparison-default');
+
 const numMovesSelect = document.getElementById('num-moves');
 const depthSelect = document.getElementById('depth');
 
@@ -60,6 +79,13 @@ const errorLog = document.getElementById('error-log');
 const errorLogContent = document.getElementById('error-log-content');
 const checkApisBtn = document.getElementById('check-apis-btn');
 const clearErrorsBtn = document.getElementById('clear-errors-btn');
+
+// Debug log elements
+const viewDebugLogsBtn = document.getElementById('view-debug-logs-btn');
+const downloadDebugLogsBtn = document.getElementById('download-debug-logs-btn');
+const clearDebugLogsBtn = document.getElementById('clear-debug-logs-btn');
+const debugLogViewer = document.getElementById('debug-log-viewer');
+const debugLogContent = document.getElementById('debug-log-content');
 
 // Error tracking
 const errors = [];
@@ -106,11 +132,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Clear errors button
   clearErrorsBtn.addEventListener('click', clearErrors);
   
-  // Toggle API key visibility
-  toggleKeyBtn.addEventListener('click', toggleApiKeyVisibility);
-  
-  // Provider change - update hints
-  apiProviderSelect.addEventListener('change', updateProviderHints);
+  // Toggle API key visibility - all provider key buttons
+  document.querySelectorAll('.toggle-key-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const input = document.getElementById(targetId);
+      if (input) {
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        btn.classList.toggle('showing', isPassword);
+      }
+    });
+  });
+
+  // Provider star buttons - set default
+  anthropicStar.addEventListener('click', () => setDefaultProvider('anthropic'));
+  openrouterStar.addEventListener('click', () => setDefaultProvider('openrouter'));
+  bigmodelStar.addEventListener('click', () => setDefaultProvider('bigmodel'));
   
   // Side toggle switch - "I am White" / "I am Black"
   sideSwitch.addEventListener('change', () => {
@@ -121,6 +159,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderChessBoard(currentFen, currentMoves[0]);
     }
   });
+
+  // Debug log buttons
+  viewDebugLogsBtn.addEventListener('click', viewDebugLogs);
+  downloadDebugLogsBtn.addEventListener('click', downloadDebugLogs);
+  clearDebugLogsBtn.addEventListener('click', clearDebugLogs);
 });
 
 // Update board labels based on orientation
@@ -140,47 +183,142 @@ function updateBoardOrientation() {
 
 async function loadSettings() {
   const settings = await chrome.storage.sync.get({
-    claudeApiKey: '',
-    apiProvider: 'anthropic',
-    apiModel: 'claude-opus-4-5-20251101',
+    // Per-provider settings
+    anthropicApiKey: '',
+    anthropicModel: 'claude-opus-4-5-20251101',
+    openrouterApiKey: '',
+    openrouterModel: 'google/gemini-3-flash-preview',
+    bigmodelApiKey: '',
+    bigmodelModel: 'glm-4v',
+    // Global settings
+    defaultProvider: 'anthropic',
+    compareProviders: ['anthropic'],
     numMoves: 5,
-    depth: 18
+    depth: 18,
+    // Migration: check old format
+    claudeApiKey: '',
+    apiProvider: 'anthropic'
   });
-  
-  apiKeyInput.value = settings.claudeApiKey;
-  apiProviderSelect.value = settings.apiProvider;
-  apiModelSelect.value = settings.apiModel;
+
+  // Migrate from old settings format if needed
+  if (settings.claudeApiKey && !settings.anthropicApiKey && !settings.openrouterApiKey) {
+    if (settings.apiProvider === 'anthropic') {
+      settings.anthropicApiKey = settings.claudeApiKey;
+    } else if (settings.apiProvider === 'openrouter') {
+      settings.openrouterApiKey = settings.claudeApiKey;
+    }
+  }
+
+  // Load provider settings
+  anthropicKey.value = settings.anthropicApiKey;
+  anthropicModel.value = settings.anthropicModel;
+  openrouterKey.value = settings.openrouterApiKey;
+  openrouterModel.value = settings.openrouterModel;
+  bigmodelKey.value = settings.bigmodelApiKey;
+  bigmodelModel.value = settings.bigmodelModel;
+
+  // Load analysis settings
   numMovesSelect.value = settings.numMoves.toString();
   depthSelect.value = settings.depth.toString();
-  
-  // Update hints based on provider
-  updateProviderHints();
+
+  // Update default provider stars
+  updateDefaultProviderUI(settings.defaultProvider);
+
+  // Update compare checkboxes
+  anthropicCompare.checked = settings.compareProviders.includes('anthropic');
+  openrouterCompare.checked = settings.compareProviders.includes('openrouter');
+  bigmodelCompare.checked = settings.compareProviders.includes('bigmodel');
+}
+
+function updateDefaultProviderUI(defaultProvider) {
+  // Update stars
+  anthropicStar.textContent = defaultProvider === 'anthropic' ? '★' : '☆';
+  anthropicStar.classList.toggle('active', defaultProvider === 'anthropic');
+  openrouterStar.textContent = defaultProvider === 'openrouter' ? '★' : '☆';
+  openrouterStar.classList.toggle('active', defaultProvider === 'openrouter');
+  bigmodelStar.textContent = defaultProvider === 'bigmodel' ? '★' : '☆';
+  bigmodelStar.classList.toggle('active', defaultProvider === 'bigmodel');
+
+  // Update section borders
+  anthropicSection.classList.toggle('is-default', defaultProvider === 'anthropic');
+  openrouterSection.classList.toggle('is-default', defaultProvider === 'openrouter');
+  bigmodelSection.classList.toggle('is-default', defaultProvider === 'bigmodel');
+}
+
+function setDefaultProvider(provider) {
+  // Check if provider has an API key
+  const keyMap = {
+    anthropic: anthropicKey.value.trim(),
+    openrouter: openrouterKey.value.trim(),
+    bigmodel: bigmodelKey.value.trim()
+  };
+
+  if (!keyMap[provider]) {
+    alert(`Please add an API key for ${provider} before setting it as default.`);
+    return;
+  }
+
+  updateDefaultProviderUI(provider);
 }
 
 async function saveSettings() {
-  const apiKey = apiKeyInput.value.trim();
-  const provider = apiProviderSelect.value;
-  
-  // Validate API key format based on provider
-  if (apiKey) {
-    if (provider === 'anthropic' && !apiKey.startsWith('sk-ant-')) {
-      alert('Invalid Anthropic API key format. Should start with sk-ant-');
-      return;
-    }
-    if (provider === 'openrouter' && !apiKey.startsWith('sk-or-')) {
-      alert('Invalid OpenRouter API key format. Should start with sk-or-');
-      return;
+  const anthropicApiKey = anthropicKey.value.trim();
+  const openrouterApiKey = openrouterKey.value.trim();
+  const bigmodelApiKey = bigmodelKey.value.trim();
+
+  // Validate API key formats
+  if (anthropicApiKey && !anthropicApiKey.startsWith('sk-ant-')) {
+    alert('Invalid Anthropic API key format. Should start with sk-ant-');
+    return;
+  }
+  if (openrouterApiKey && !openrouterApiKey.startsWith('sk-or-')) {
+    alert('Invalid OpenRouter API key format. Should start with sk-or-');
+    return;
+  }
+
+  // Determine default provider (whichever star is active)
+  let defaultProvider = 'anthropic';
+  if (anthropicStar.classList.contains('active')) defaultProvider = 'anthropic';
+  else if (openrouterStar.classList.contains('active')) defaultProvider = 'openrouter';
+  else if (bigmodelStar.classList.contains('active')) defaultProvider = 'bigmodel';
+
+  // Get compare providers
+  const compareProviders = [];
+  if (anthropicCompare.checked) compareProviders.push('anthropic');
+  if (openrouterCompare.checked) compareProviders.push('openrouter');
+  if (bigmodelCompare.checked) compareProviders.push('bigmodel');
+
+  // If no providers selected for comparison, use default
+  if (compareProviders.length === 0) {
+    compareProviders.push(defaultProvider);
+  }
+
+  // Validate that default provider has an API key
+  const keyMap = { anthropic: anthropicApiKey, openrouter: openrouterApiKey, bigmodel: bigmodelApiKey };
+  if (!keyMap[defaultProvider]) {
+    // Auto-select first provider with a key as default
+    for (const provider of ['anthropic', 'openrouter', 'bigmodel']) {
+      if (keyMap[provider]) {
+        defaultProvider = provider;
+        updateDefaultProviderUI(provider);
+        break;
+      }
     }
   }
-  
+
   await chrome.storage.sync.set({
-    claudeApiKey: apiKey,
-    apiProvider: provider,
-    apiModel: apiModelSelect.value,
+    anthropicApiKey,
+    anthropicModel: anthropicModel.value,
+    openrouterApiKey,
+    openrouterModel: openrouterModel.value,
+    bigmodelApiKey,
+    bigmodelModel: bigmodelModel.value,
+    defaultProvider,
+    compareProviders,
     numMoves: parseInt(numMovesSelect.value),
     depth: parseInt(depthSelect.value)
   });
-  
+
   hideSettings();
   updateStatus('Settings saved!', 'success');
 }
@@ -195,23 +333,6 @@ function hideSettings() {
   settingsPanel.classList.remove('active');
 }
 
-function toggleApiKeyVisibility() {
-  const isPassword = apiKeyInput.type === 'password';
-  apiKeyInput.type = isPassword ? 'text' : 'password';
-  toggleKeyBtn.classList.toggle('showing', isPassword);
-}
-
-function updateProviderHints() {
-  const provider = apiProviderSelect.value;
-  
-  if (provider === 'anthropic') {
-    apiKeyInput.placeholder = 'sk-ant-api03-...';
-    apiKeyHint.innerHTML = 'Get your key at <a href="https://console.anthropic.com/" target="_blank" style="color: #3498db;">console.anthropic.com</a>';
-  } else if (provider === 'openrouter') {
-    apiKeyInput.placeholder = 'sk-or-v1-...';
-    apiKeyHint.innerHTML = 'Get your key at <a href="https://openrouter.ai/keys" target="_blank" style="color: #3498db;">openrouter.ai/keys</a>';
-  }
-}
 
 // ============================================================================
 // API STATUS INDICATORS
@@ -254,13 +375,20 @@ async function checkAllAPIs() {
 }
 
 async function checkAnthropicAPI() {
-  const apiKey = apiKeyInput.value.trim();
-  const provider = apiProviderSelect.value;
-  
+  // Check the default provider's API key
+  const settings = await chrome.storage.sync.get(['defaultProvider', 'anthropicApiKey', 'openrouterApiKey', 'bigmodelApiKey']);
+  const provider = settings.defaultProvider || 'anthropic';
+  const keyMap = {
+    anthropic: settings.anthropicApiKey,
+    openrouter: settings.openrouterApiKey,
+    bigmodel: settings.bigmodelApiKey
+  };
+  const apiKey = keyMap[provider];
+
   if (!apiKey) {
-    return { success: false, error: 'No API key configured' };
+    return { success: false, error: `No API key configured for ${provider}` };
   }
-  
+
   try {
     const response = await chrome.runtime.sendMessage({
       type: 'TEST_ANTHROPIC_API',
@@ -339,11 +467,24 @@ function logError(source, message) {
 // ============================================================================
 
 async function handleCapture() {
-  // Check for API key first
-  const { claudeApiKey } = await chrome.storage.sync.get('claudeApiKey');
-  
-  if (!claudeApiKey) {
-    updateStatus('Please configure your Claude API key in settings', 'error');
+  // Check for API key first - at least one provider needs a key
+  const settings = await chrome.storage.sync.get(['anthropicApiKey', 'openrouterApiKey', 'bigmodelApiKey', 'defaultProvider']);
+  const hasAnyKey = settings.anthropicApiKey || settings.openrouterApiKey || settings.bigmodelApiKey;
+
+  if (!hasAnyKey) {
+    updateStatus('Please configure at least one API key in settings', 'error');
+    showSettings();
+    return;
+  }
+
+  // Check that default provider has a key
+  const keyMap = {
+    anthropic: settings.anthropicApiKey,
+    openrouter: settings.openrouterApiKey,
+    bigmodel: settings.bigmodelApiKey
+  };
+  if (!keyMap[settings.defaultProvider]) {
+    updateStatus('Default provider has no API key. Please configure it in settings.', 'error');
     showSettings();
     return;
   }
@@ -442,15 +583,22 @@ function clearResults() {
 
 function displayResults(data) {
   console.log('[Panel] Displaying results:', data);
-  
+
   // Show all sections
   positionSection.style.display = 'block';
   movesSection.style.display = 'block';
   boardSection.style.display = 'block';
   explanationSection.style.display = 'block';
-  
+
   // Update status
   updateStatus('Analysis complete!', 'success');
+
+  // Show comparison box if we have comparison data
+  if (data.comparison && data.comparison.disagreements) {
+    displayComparison(data.comparison);
+  } else {
+    comparisonBox.style.display = 'none';
+  }
   
   // Display FEN and turn
   if (data.fen) {
@@ -486,6 +634,71 @@ function displayResults(data) {
   } else {
     explanationText.innerHTML = '<div class="placeholder">Unable to generate explanation.</div>';
   }
+}
+
+// Display comparison results from multi-model analysis
+function displayComparison(comparison) {
+  comparisonBox.style.display = 'block';
+
+  // Build diagnostic table
+  let html = '<table class="comparison-table">';
+  html += '<thead><tr><th>Provider</th><th>Pawns</th><th>Conf</th><th>Status</th></tr></thead>';
+  html += '<tbody>';
+
+  const hasDisagreements = comparison.providerDetails.some(p => p.status === 'disagree' || p.status === 'error');
+
+  comparison.providerDetails.forEach(p => {
+    const providerName = getProviderDisplayName(p.provider);
+    const pawns = `${p.whitePawns}W/${p.blackPawns}B`;
+    const conf = p.confidence === 'high' ? '●●●' : p.confidence === 'medium' ? '●●○' : '●○○';
+
+    let statusHtml = '';
+    let rowClass = '';
+
+    if (p.status === 'default') {
+      statusHtml = '<span class="status-default">★ default</span>';
+      rowClass = 'row-default';
+    } else if (p.status === 'agree') {
+      statusHtml = '<span class="status-agree">✓ matches</span>';
+      rowClass = 'row-agree';
+    } else if (p.status === 'error') {
+      statusHtml = `<span class="status-error">✗ error</span>`;
+      rowClass = 'row-error';
+    } else {
+      statusHtml = `<span class="status-disagree">⚠ ${p.diffCount} squares</span>`;
+      rowClass = 'row-disagree';
+    }
+
+    html += `<tr class="${rowClass}"><td>${providerName}</td><td>${pawns}</td><td>${conf}</td><td>${statusHtml}</td></tr>`;
+  });
+
+  html += '</tbody></table>';
+
+  // Add expandable square details if there are disagreements
+  if (hasDisagreements && comparison.squareDetails && comparison.squareDetails.length > 0) {
+    html += '<details class="square-details"><summary>Show square details (' + comparison.squareDetails.length + ')</summary>';
+    html += '<div class="square-list">';
+    comparison.squareDetails.forEach(d => {
+      const providerName = getProviderDisplayName(d.provider);
+      html += `<div class="square-diff">${providerName} ${d.square}: ${d.otherPiece} vs ${d.defaultPiece}</div>`;
+    });
+    html += '</div></details>';
+  }
+
+  comparisonResults.innerHTML = html;
+
+  // Show which model is being used for Stockfish/explanation
+  const defaultName = getProviderDisplayName(comparison.defaultProvider);
+  comparisonDefault.innerHTML = `Using: ${defaultName} for analysis <span class="default-star">★</span>`;
+}
+
+function getProviderDisplayName(provider) {
+  const names = {
+    anthropic: 'Anthropic',
+    openrouter: 'OpenRouter',
+    bigmodel: 'BigModel'
+  };
+  return names[provider] || provider;
 }
 
 // Unicode pieces
@@ -844,4 +1057,111 @@ function getEvalClass(evaluation) {
   if (num > 0.3) return 'positive';
   if (num < -0.3) return 'negative';
   return '';
+}
+
+// ============================================================================
+// DEBUG LOGS
+// ============================================================================
+
+async function viewDebugLogs() {
+  viewDebugLogsBtn.textContent = 'Loading...';
+  viewDebugLogsBtn.disabled = true;
+
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'GET_DEBUG_LOGS' });
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get logs');
+    }
+
+    const logs = response.logs || [];
+
+    if (logs.length === 0) {
+      debugLogContent.innerHTML = '<span style="color: #888;">No debug logs yet. Try capturing a screenshot first.</span>';
+    } else {
+      // Format logs with color coding
+      const formatted = logs.map(log => {
+        const levelColor = log.level === 'error' ? '#ff6b6b' :
+                          log.level === 'warn' ? '#ffd93d' : '#6bcb77';
+        return `<div style="margin-bottom: 12px; border-left: 3px solid ${levelColor}; padding-left: 8px;">` +
+          `<div style="color: #888; font-size: 10px;">${log.timestamp}</div>` +
+          `<div><span style="color: ${levelColor}; font-weight: bold;">[${log.level.toUpperCase()}]</span> ` +
+          `<span style="color: #61dafb;">${log.source}</span>: ${log.message}</div>` +
+          (log.data ? `<div style="color: #aaa; margin-top: 4px; background: #0d0d1a; padding: 6px; border-radius: 4px; overflow-x: auto;">${escapeHtml(log.data)}</div>` : '') +
+          `</div>`;
+      }).join('');
+
+      debugLogContent.innerHTML = formatted;
+    }
+
+    debugLogViewer.style.display = 'block';
+
+  } catch (error) {
+    debugLogContent.innerHTML = `<span style="color: #ff6b6b;">Error: ${error.message}</span>`;
+    debugLogViewer.style.display = 'block';
+  } finally {
+    viewDebugLogsBtn.textContent = 'View Logs';
+    viewDebugLogsBtn.disabled = false;
+  }
+}
+
+async function downloadDebugLogs() {
+  downloadDebugLogsBtn.textContent = 'Downloading...';
+  downloadDebugLogsBtn.disabled = true;
+
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'GET_DEBUG_LOGS' });
+
+    if (!response.success) {
+      throw new Error(response.error || 'Failed to get logs');
+    }
+
+    const logs = response.logs || [];
+    const logText = logs.map(log => {
+      return `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.source}: ${log.message}` +
+        (log.data ? `\nDATA:\n${log.data}` : '') +
+        '\n' + '-'.repeat(80);
+    }).join('\n\n');
+
+    // Create download
+    const blob = new Blob([logText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chess-study-debug-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+  } catch (error) {
+    alert('Failed to download logs: ' + error.message);
+  } finally {
+    downloadDebugLogsBtn.textContent = 'Download';
+    downloadDebugLogsBtn.disabled = false;
+  }
+}
+
+async function clearDebugLogs() {
+  if (!confirm('Clear all debug logs?')) return;
+
+  clearDebugLogsBtn.textContent = 'Clearing...';
+  clearDebugLogsBtn.disabled = true;
+
+  try {
+    await chrome.runtime.sendMessage({ type: 'CLEAR_DEBUG_LOGS' });
+    debugLogViewer.style.display = 'none';
+    debugLogContent.innerHTML = '';
+  } catch (error) {
+    alert('Failed to clear logs: ' + error.message);
+  } finally {
+    clearDebugLogsBtn.textContent = 'Clear';
+    clearDebugLogsBtn.disabled = false;
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }

@@ -38,5 +38,261 @@
     "permission_mode": "bypassPermissions",
     "hook_event_name": "Stop",
     "stop_hook_active": false
+  },
+  {
+    "session_id": "196bccc8-6e26-438d-a15e-5e1c6de53d62",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "196bccc8-6e26-438d-a15e-5e1c6de53d62",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": true
+  },
+  {
+    "session_id": "196bccc8-6e26-438d-a15e-5e1c6de53d62",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "196bccc8-6e26-438d-a15e-5e1c6de53d62",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "ad2d4ec9-6107-4e52-a222-1ee06dd28fbe",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/ad2d4ec9-6107-4e52-a222-1ee06dd28fbe.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "ad2d4ec9-6107-4e52-a222-1ee06dd28fbe",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/ad2d4ec9-6107-4e52-a222-1ee06dd28fbe.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "ad2d4ec9-6107-4e52-a222-1ee06dd28fbe",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/ad2d4ec9-6107-4e52-a222-1ee06dd28fbe.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "plan",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "plan",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "plan",
+    "hook_event_name": "Stop",
+    "stop_hook_active": true
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "plan",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "plan",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "plan",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "plan",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "plan",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "plan",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "7efa8990-a24b-4390-98dc-5077691f079c",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7efa8990-a24b-4390-98dc-5077691f079c.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": true
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "94f6eed6-4799-4546-a84a-61250d6ef0ec",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/94f6eed6-4799-4546-a84a-61250d6ef0ec.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
   }
 ]

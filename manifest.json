@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chess Study Tool - AI Analysis",
-  "version": "2.9.0",
+  "version": "2.10.1",
   "description": "Standalone chess learning tool - captures screenshots and provides AI-powered analysis. No interaction with chess websites.",
 
   "permissions": [
@@ -15,7 +15,8 @@
     "https://lichess.org/*",
     "https://chess-api.com/*",
     "https://api.anthropic.com/*",
-    "https://openrouter.ai/*"
+    "https://openrouter.ai/*",
+    "https://open.bigmodel.cn/*"
   ],
   
   "background": {

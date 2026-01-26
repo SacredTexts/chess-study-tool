@@ -19,8 +19,78 @@ const CONFIG = {
   CHESS_API_URL: 'https://chess-api.com/v1', // Fallback
   CLAUDE_API_URL: 'https://api.anthropic.com/v1/messages',
   OPENROUTER_API_URL: 'https://openrouter.ai/api/v1/chat/completions',
-  CLAUDE_MODEL: 'claude-opus-4-5-20251101'
+  BIGMODEL_API_URL: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+  CLAUDE_MODEL: 'claude-opus-4-5-20251101',
+  MAX_DEBUG_LOGS: 50 // Keep last 50 log entries
 };
+
+// Provider configurations
+const PROVIDERS = {
+  anthropic: {
+    name: 'Anthropic',
+    url: CONFIG.CLAUDE_API_URL,
+    models: ['claude-opus-4-5-20251101', 'claude-sonnet-4-5-20250929', 'claude-haiku-4-5-20251001']
+  },
+  openrouter: {
+    name: 'OpenRouter',
+    url: CONFIG.OPENROUTER_API_URL,
+    models: ['google/gemini-3-flash-preview']
+  },
+  bigmodel: {
+    name: 'BigModel',
+    url: CONFIG.BIGMODEL_API_URL,
+    models: ['glm-4v', 'glm-4v-plus']
+  }
+};
+
+// ============================================================================
+// DEBUG LOGGING SYSTEM
+// ============================================================================
+
+async function debugLog(level, source, message, data = null) {
+  const timestamp = new Date().toISOString();
+  const entry = {
+    timestamp,
+    level, // 'info', 'warn', 'error'
+    source,
+    message,
+    data: data ? (typeof data === 'string' ? data : JSON.stringify(data, null, 2)) : null
+  };
+
+  // Also log to console
+  const consoleMsg = `[Chess Study] [${level.toUpperCase()}] ${source}: ${message}`;
+  if (level === 'error') {
+    console.error(consoleMsg, data || '');
+  } else if (level === 'warn') {
+    console.warn(consoleMsg, data || '');
+  } else {
+    console.log(consoleMsg, data || '');
+  }
+
+  // Store in chrome.storage.local
+  try {
+    const { debugLogs = [] } = await chrome.storage.local.get('debugLogs');
+    debugLogs.push(entry);
+
+    // Keep only the last N entries
+    while (debugLogs.length > CONFIG.MAX_DEBUG_LOGS) {
+      debugLogs.shift();
+    }
+
+    await chrome.storage.local.set({ debugLogs });
+  } catch (e) {
+    console.error('[Chess Study] Failed to store debug log:', e);
+  }
+}
+
+async function getDebugLogs() {
+  const { debugLogs = [] } = await chrome.storage.local.get('debugLogs');
+  return debugLogs;
+}
+
+async function clearDebugLogs() {
+  await chrome.storage.local.set({ debugLogs: [] });
+}
 
 // ============================================================================
 // EXTENSION ICON CLICK - Open Side Panel
@@ -70,7 +140,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   }
-  
+
+  if (message.type === 'GET_DEBUG_LOGS') {
+    getDebugLogs()
+      .then(logs => sendResponse({ success: true, logs }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (message.type === 'CLEAR_DEBUG_LOGS') {
+    clearDebugLogs()
+      .then(() => sendResponse({ success: true }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
   return false;
 });
 
@@ -109,79 +193,264 @@ async function handleCapture(sendResponse) {
 
 async function handleAnalysis(imageData) {
   try {
-    // Get settings
+    // Get settings (new multi-provider format)
     const settings = await chrome.storage.sync.get({
+      anthropicApiKey: '',
+      anthropicModel: 'claude-opus-4-5-20251101',
+      openrouterApiKey: '',
+      openrouterModel: 'google/gemini-3-flash-preview',
+      bigmodelApiKey: '',
+      bigmodelModel: 'glm-4v',
+      defaultProvider: 'anthropic',
+      compareProviders: ['anthropic'],
+      numMoves: 5,
+      depth: 18,
+      // Migration support for old format
       claudeApiKey: '',
       apiProvider: 'anthropic',
-      apiModel: 'claude-opus-4-5-20251101',
-      numMoves: 5,
-      depth: 18
+      apiModel: 'claude-opus-4-5-20251101'
     });
-    
-    if (!settings.claudeApiKey) {
-      return { error: 'API key not configured' };
+
+    // Migrate from old settings if needed
+    if (settings.claudeApiKey && !settings.anthropicApiKey && !settings.openrouterApiKey) {
+      if (settings.apiProvider === 'anthropic') {
+        settings.anthropicApiKey = settings.claudeApiKey;
+        settings.anthropicModel = settings.apiModel;
+      } else if (settings.apiProvider === 'openrouter') {
+        settings.openrouterApiKey = settings.claudeApiKey;
+        settings.openrouterModel = settings.apiModel;
+      }
+      settings.defaultProvider = settings.apiProvider;
+      settings.compareProviders = [settings.apiProvider];
     }
-    
-    // Step 1: Claude Vision - recognize the position
+
+    // Build provider config map
+    const providerConfigs = {
+      anthropic: { apiKey: settings.anthropicApiKey, model: settings.anthropicModel },
+      openrouter: { apiKey: settings.openrouterApiKey, model: settings.openrouterModel },
+      bigmodel: { apiKey: settings.bigmodelApiKey, model: settings.bigmodelModel }
+    };
+
+    // Get enabled providers (those in compareProviders with API keys)
+    const enabledProviders = settings.compareProviders.filter(p => providerConfigs[p]?.apiKey);
+
+    // Ensure default provider is enabled and has a key
+    if (!providerConfigs[settings.defaultProvider]?.apiKey) {
+      // Find first provider with a key
+      const firstWithKey = ['anthropic', 'openrouter', 'bigmodel'].find(p => providerConfigs[p]?.apiKey);
+      if (firstWithKey) {
+        settings.defaultProvider = firstWithKey;
+        if (!enabledProviders.includes(firstWithKey)) {
+          enabledProviders.push(firstWithKey);
+        }
+      } else {
+        return { error: 'No API key configured for any provider' };
+      }
+    }
+
+    // Ensure default is in enabled list
+    if (!enabledProviders.includes(settings.defaultProvider)) {
+      enabledProviders.push(settings.defaultProvider);
+    }
+
     console.log('[Chess Study] Step 1: Analyzing with Vision...');
-    let visionResult;
-    try {
-      visionResult = await analyzeWithVision(imageData, settings.claudeApiKey, settings.apiProvider, settings.apiModel);
-      console.log('[Chess Study] Vision result:', visionResult);
-    } catch (visionError) {
-      console.error('[Chess Study] Vision error:', visionError);
-      return { error: 'Vision analysis failed: ' + visionError.message };
-    }
-    
-    if (!visionResult.fen) {
-      return { 
-        error: 'Could not recognize a chess position in the screenshot. Make sure a chess board is visible.',
-        ...visionResult
+    console.log('[Chess Study] Enabled providers:', enabledProviders);
+    console.log('[Chess Study] Default provider:', settings.defaultProvider);
+
+    // Run Vision analysis on all enabled providers in parallel
+    const visionPromises = enabledProviders.map(async (provider) => {
+      const config = providerConfigs[provider];
+      try {
+        const result = await analyzeWithVision(imageData, config.apiKey, provider, config.model);
+        return {
+          provider,
+          ...result,
+          isDefault: provider === settings.defaultProvider
+        };
+      } catch (error) {
+        console.error(`[Chess Study] Vision error for ${provider}:`, error);
+        return {
+          provider,
+          fen: null,
+          error: error.message,
+          isDefault: provider === settings.defaultProvider
+        };
+      }
+    });
+
+    const visionResults = await Promise.all(visionPromises);
+    console.log('[Chess Study] All Vision results:', visionResults);
+
+    // Find the default provider's result
+    const defaultResult = visionResults.find(r => r.isDefault);
+
+    if (!defaultResult?.fen) {
+      const visionErrorMsg = defaultResult?.visionError || defaultResult?.error
+        ? `Vision error: ${defaultResult.visionError || defaultResult.error}`
+        : 'Could not recognize a chess position in the screenshot. Make sure a chess board is visible.';
+      console.error('[Chess Study] Default provider Vision failed:', visionErrorMsg);
+      return {
+        error: visionErrorMsg,
+        ...defaultResult
       };
     }
-    
-    // Step 2: Stockfish - get best moves
+
+    // Compare FENs if we have multiple results
+    let comparison = null;
+    if (visionResults.length > 1) {
+      comparison = compareFENs(visionResults);
+      console.log('[Chess Study] FEN comparison:', comparison);
+    }
+
+    // Step 2: Stockfish - get best moves (using default provider's FEN)
     console.log('[Chess Study] Step 2: Getting Stockfish analysis...');
-    console.log('[Chess Study] FEN to analyze:', visionResult.fen);
+    console.log('[Chess Study] FEN to analyze:', defaultResult.fen);
     let moves;
     try {
-      moves = await getStockfishMoves(visionResult.fen, settings.depth, settings.numMoves);
+      moves = await getStockfishMoves(defaultResult.fen, settings.depth, settings.numMoves);
       console.log('[Chess Study] Stockfish moves:', moves);
     } catch (stockfishError) {
       console.error('[Chess Study] Stockfish error:', stockfishError);
-      return { 
-        error: `Stockfish analysis failed: ${stockfishError.message}\n\nFEN was: ${visionResult.fen}`,
-        fen: visionResult.fen,
-        turn: visionResult.turn
+      return {
+        error: `Stockfish analysis failed: ${stockfishError.message}\n\nFEN was: ${defaultResult.fen}`,
+        fen: defaultResult.fen,
+        turn: defaultResult.turn,
+        comparison
       };
     }
-    
-    // Step 3: Claude - get explanation
+
+    // Step 3: Get explanation (using default provider)
     console.log('[Chess Study] Step 3: Getting explanation...');
+    const defaultConfig = providerConfigs[settings.defaultProvider];
     let explanation;
     try {
-      explanation = await getExplanation(visionResult.fen, moves, settings.claudeApiKey, settings.apiProvider, settings.apiModel);
+      explanation = await getExplanation(defaultResult.fen, moves, defaultConfig.apiKey, settings.defaultProvider, defaultConfig.model);
       console.log('[Chess Study] Explanation:', explanation);
     } catch (explainError) {
       console.error('[Chess Study] Explanation error:', explainError);
       explanation = 'Could not generate explanation.';
     }
-    
+
     const result = {
-      fen: visionResult.fen,
-      turn: visionResult.turn,
-      description: visionResult.description,
+      fen: defaultResult.fen,
+      turn: defaultResult.turn,
+      description: defaultResult.description,
       moves,
-      explanation
+      explanation,
+      comparison
     };
-    
+
     console.log('[Chess Study] Final result:', result);
     return result;
-    
+
   } catch (error) {
     console.error('[Chess Study] Analysis error:', error);
     return { error: error.message };
   }
+}
+
+// ============================================================================
+// FEN COMPARISON
+// ============================================================================
+
+// Piece display characters for comparison results
+const PIECE_DISPLAY = {
+  'P': '♙', 'N': '♘', 'B': '♗', 'R': '♖', 'Q': '♕', 'K': '♔',
+  'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛', 'k': '♚',
+  '': '·'
+};
+
+// Parse FEN into 64-square array
+function fenToSquares(fen) {
+  if (!fen) return Array(64).fill('');
+  const boardPart = fen.split(' ')[0];
+  const ranks = boardPart.split('/');
+  const squares = [];
+
+  for (const rank of ranks) {
+    for (const char of rank) {
+      if ('12345678'.includes(char)) {
+        for (let i = 0; i < parseInt(char); i++) {
+          squares.push('');
+        }
+      } else {
+        squares.push(char);
+      }
+    }
+  }
+
+  return squares;
+}
+
+// Convert square index to algebraic notation
+function indexToAlgebraic(index) {
+  const file = String.fromCharCode(97 + (index % 8)); // a-h
+  const rank = 8 - Math.floor(index / 8); // 8-1
+  return file + rank;
+}
+
+// Compare FEN results from multiple providers
+function compareFENs(results) {
+  const defaultResult = results.find(r => r.isDefault);
+  if (!defaultResult?.fen) {
+    return null;
+  }
+
+  const defaultSquares = fenToSquares(defaultResult.fen);
+  const providerDetails = [];
+  const squareDetails = []; // Individual square differences for expandable view
+
+  for (const result of results) {
+    const detail = {
+      provider: result.provider,
+      isDefault: result.isDefault || false,
+      fen: result.fen,
+      whitePawns: result.whitePawns ?? '?',
+      blackPawns: result.blackPawns ?? '?',
+      confidence: result.confidence || 'unknown',
+      status: 'agree',
+      diffCount: 0
+    };
+
+    if (result.isDefault) {
+      detail.status = 'default';
+      providerDetails.push(detail);
+      continue;
+    }
+
+    if (!result.fen) {
+      detail.status = 'error';
+      detail.error = result.error || result.visionError || 'Failed to get FEN';
+      providerDetails.push(detail);
+      continue;
+    }
+
+    const otherSquares = fenToSquares(result.fen);
+    let diffCount = 0;
+
+    for (let i = 0; i < 64; i++) {
+      if (otherSquares[i] !== defaultSquares[i]) {
+        diffCount++;
+        squareDetails.push({
+          provider: result.provider,
+          square: indexToAlgebraic(i),
+          defaultPiece: PIECE_DISPLAY[defaultSquares[i]] || '·',
+          otherPiece: PIECE_DISPLAY[otherSquares[i]] || '·'
+        });
+      }
+    }
+
+    detail.diffCount = diffCount;
+    detail.status = diffCount > 0 ? 'disagree' : 'agree';
+    providerDetails.push(detail);
+  }
+
+  return {
+    defaultFen: defaultResult.fen,
+    defaultProvider: defaultResult.provider,
+    providerDetails,
+    squareDetails
+  };
 }
 
 // ============================================================================
@@ -191,64 +460,93 @@ async function handleAnalysis(imageData) {
 async function analyzeWithVision(imageDataUrl, apiKey, provider = 'anthropic', model = 'claude-sonnet-4-5-20250929') {
   const base64Data = imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
   
-  const prompt = `You are a chess position analyzer. Look at this screenshot and find any chess board visible.
+  const prompt = `IMPORTANT: Output ONLY JSON. Do all analysis internally - do not write out your steps.
 
-Your task:
-1. Locate the chess board in the image
-2. Carefully identify every piece and its exact square
-3. Determine whose turn it is (look for visual cues like clocks, highlights, or turn indicators)
-4. Convert the position to FEN notation
+Analyze this chess screenshot to extract the position as FEN notation.
+
+ANALYSIS CHECKLIST (do not output these steps):
+1. Find the 8x8 board and determine orientation (white pieces on ranks 1-2)
+2. Read each rank from 8 to 1, squares a-h
+3. Convert to FEN (consecutive empty squares become numbers)
+4. Validate: ≤8 pawns per side, exactly 1 king per side, no pawns on ranks 1/8
 
 PIECE IDENTIFICATION:
-- White pieces: K (King), Q (Queen), R (Rook), B (Bishop), N (Knight), P (Pawn) - usually lighter colored
-- Black pieces: k, q, r, b, n, p - usually darker colored
+- King: cross on top | Queen: crown with points
+- Rook: castle tower | Bishop: pointed hat with slit
+- Knight: horse head | Pawn: small round head
 
-BOARD ORIENTATION:
-- Standard view: White pieces start on ranks 1-2, Black on ranks 7-8
-- If viewing from Black's side, mentally flip the board
-- The a1 square is always dark (from White's perspective, bottom-left)
+RESPOND WITH JSON ONLY - no explanation, no steps, no markdown:
+{"fen": "...", "turn": "w/b", "whitePawns": N, "blackPawns": N, "description": "brief", "confidence": "high/medium/low"}
 
-CRITICAL RULES FOR FEN:
-1. Each side starts with EXACTLY 8 pawns - if a pawn has moved, it's NO LONGER on its starting square
-2. When a pawn moves from e2 to e4, rank 2 shows "PPPP1PPP" (missing the e-pawn), NOT "PPPPPPPP"
-3. Count pieces carefully: White has max 8 pawns, Black has max 8 pawns
-4. Pawns CANNOT be on rank 1 or rank 8 (they would promote)
-5. Each rank in FEN must sum to exactly 8 squares
-
-FEN FORMAT (exactly 6 space-separated parts):
-1. Piece placement (8 ranks separated by /)
-2. Active color: "w" or "b"
-3. Castling: "KQkq", "Kq", "-", etc.
-4. En passant: square like "e3" or "-"
-5. Halfmove clock: number (use "0")
-6. Fullmove: number (use "1")
-
-VALIDATION CHECKLIST before responding:
-□ Exactly 8 ranks separated by /
-□ Each rank sums to 8 (pieces + numbers)
-□ White pawns ≤ 8, Black pawns ≤ 8
-□ No pawns on ranks 1 or 8
-□ Exactly 1 white King, 1 black King
-□ Moved pieces are NOT on their original squares
-
-OUTPUT FORMAT (JSON only):
-{
-  "fen": "rnbqkbnr/ppppp1pp/8/5p2/3P4/8/PPP1PPPP/RNBQKBNR w KQkq f6 0 2",
-  "turn": "w",
-  "description": "Dutch Defense after 1.d4 f5",
-  "confidence": "high"
-}
-
-If NO chess board is found:
-{
-  "fen": null,
-  "error": "No chess board detected"
-}`;
+If no board found: {"fen": null, "error": "No chess board detected"}`;
 
   let response;
   let data;
-  
-  if (provider === 'openrouter') {
+
+  if (provider === 'bigmodel') {
+    // BigModel (Zhipu AI) API - OpenAI-compatible format
+    response = await fetch(CONFIG.BIGMODEL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: `data:image/png;base64,${base64Data}` } }
+          ]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const errorMsg = err.error?.message || `BigModel API error: ${response.status}`;
+      await debugLog('error', 'Vision/BigModel', 'API request failed', { status: response.status, error: err });
+      throw new Error(errorMsg);
+    }
+
+    data = await response.json();
+    const text = data.choices?.[0]?.message?.content || '';
+
+    // Log the FULL raw response for debugging
+    await debugLog('info', 'Vision/BigModel', 'Raw API response', {
+      model: model,
+      responseLength: text.length,
+      fullResponse: text
+    });
+
+    // Parse JSON response
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const result = JSON.parse(jsonMatch[0]);
+        await debugLog('info', 'Vision/BigModel', 'Parsed result', result);
+        if (result.fen === null) {
+          await debugLog('warn', 'Vision/BigModel', 'Vision returned null FEN', { error: result.error });
+        }
+        return {
+          fen: result.fen,
+          turn: result.turn || (result.fen?.split(' ')[1]) || 'w',
+          description: result.description,
+          confidence: result.confidence,
+          visionError: result.error
+        };
+      } else {
+        await debugLog('error', 'Vision/BigModel', 'No JSON found in response', { rawText: text });
+      }
+    } catch (e) {
+      await debugLog('error', 'Vision/BigModel', 'JSON parse error', {
+        error: e.message,
+        rawText: text
+      });
+    }
+
+  } else if (provider === 'openrouter') {
     // OpenRouter API
     // Map Anthropic model IDs to OpenRouter format
     let openRouterModel = model;
@@ -272,7 +570,7 @@ If NO chess board is found:
       },
       body: JSON.stringify({
         model: openRouterModel,
-        max_tokens: 1000,
+        max_tokens: 5000,
         messages: [{
           role: 'user',
           content: [
@@ -290,28 +588,47 @@ If NO chess board is found:
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      throw new Error(err.error?.message || `OpenRouter API error: ${response.status}`);
+      const errorMsg = err.error?.message || `OpenRouter API error: ${response.status}`;
+      await debugLog('error', 'Vision/OpenRouter', 'API request failed', { status: response.status, error: err });
+      throw new Error(errorMsg);
     }
 
     data = await response.json();
     const text = data.choices?.[0]?.message?.content || '';
-    
+
+    // Log the FULL raw response for debugging
+    await debugLog('info', 'Vision/OpenRouter', 'Raw API response', {
+      model: openRouterModel,
+      responseLength: text.length,
+      fullResponse: text
+    });
+
     // Parse JSON response
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const result = JSON.parse(jsonMatch[0]);
+        await debugLog('info', 'Vision/OpenRouter', 'Parsed result', result);
+        if (result.fen === null) {
+          await debugLog('warn', 'Vision/OpenRouter', 'Vision returned null FEN', { error: result.error });
+        }
         return {
           fen: result.fen,
           turn: result.turn || (result.fen?.split(' ')[1]) || 'w',
           description: result.description,
-          confidence: result.confidence
+          confidence: result.confidence,
+          visionError: result.error
         };
+      } else {
+        await debugLog('error', 'Vision/OpenRouter', 'No JSON found in response', { rawText: text });
       }
     } catch (e) {
-      console.error('[Chess Study] Vision parse error:', e);
+      await debugLog('error', 'Vision/OpenRouter', 'JSON parse error', {
+        error: e.message,
+        rawText: text
+      });
     }
-    
+
   } else {
     // Anthropic API (direct)
     response = await fetch(CONFIG.CLAUDE_API_URL, {
@@ -324,7 +641,7 @@ If NO chess board is found:
       },
       body: JSON.stringify({
         model: model,
-        max_tokens: 1000,
+        max_tokens: 5000,
         messages: [{
           role: 'user',
           content: [
@@ -344,32 +661,51 @@ If NO chess board is found:
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Claude API error: ${response.status}`);
+      const errorMsg = err.error?.message || `Claude API error: ${response.status}`;
+      await debugLog('error', 'Vision/Anthropic', 'API request failed', { status: response.status, error: err });
+      throw new Error(errorMsg);
     }
 
     data = await response.json();
     const text = data.content?.[0]?.text || '';
-    console.log('[Chess Study] Vision raw response:', text);
-    
+
+    // Log the FULL raw response for debugging
+    await debugLog('info', 'Vision/Anthropic', 'Raw API response', {
+      model: model,
+      responseLength: text.length,
+      fullResponse: text,
+      stopReason: data.stop_reason
+    });
+
     // Parse JSON response
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const result = JSON.parse(jsonMatch[0]);
-        console.log('[Chess Study] Vision parsed FEN:', result.fen);
+        await debugLog('info', 'Vision/Anthropic', 'Parsed result', result);
+        if (result.fen === null) {
+          await debugLog('warn', 'Vision/Anthropic', 'Vision returned null FEN', { error: result.error });
+        }
         return {
           fen: result.fen,
           turn: result.turn || (result.fen?.split(' ')[1]) || 'w',
           description: result.description,
-          confidence: result.confidence
+          confidence: result.confidence,
+          visionError: result.error
         };
+      } else {
+        await debugLog('error', 'Vision/Anthropic', 'No JSON found in response', { rawText: text });
       }
     } catch (e) {
-      console.error('[Chess Study] Vision parse error:', e);
+      await debugLog('error', 'Vision/Anthropic', 'JSON parse error', {
+        error: e.message,
+        rawText: text
+      });
     }
   }
-  
-  return { fen: null };
+
+  await debugLog('error', 'Vision', 'Failed to return a valid result - check logs above for details');
+  return { fen: null, visionError: 'Failed to parse Vision response - check debug logs' };
 }
 
 // ============================================================================
@@ -744,8 +1080,30 @@ Use proper chess terminology: development, center control, king safety, initiati
 Keep it under 150 words. Be instructive and clear.`;
 
   let response;
-  
-  if (provider === 'openrouter') {
+
+  if (provider === 'bigmodel') {
+    // BigModel (Zhipu AI) API
+    response = await fetch(CONFIG.BIGMODEL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model.replace('-4v', '-4'), // Use non-vision model for text
+        max_tokens: 400,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) {
+      return 'Could not generate explanation.';
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || 'No explanation available.';
+
+  } else if (provider === 'openrouter') {
     // Map Anthropic model IDs to OpenRouter format
     let openRouterModel = model;
     if (model.includes('claude-opus-4-5')) {
@@ -757,7 +1115,7 @@ Keep it under 150 words. Be instructive and clear.`;
     } else if (model.startsWith('claude-')) {
       openRouterModel = `anthropic/${model}`;
     }
-    
+
     response = await fetch(CONFIG.OPENROUTER_API_URL, {
       method: 'POST',
       headers: {
@@ -779,7 +1137,7 @@ Keep it under 150 words. Be instructive and clear.`;
 
     const data = await response.json();
     return data.choices?.[0]?.message?.content || 'No explanation available.';
-    
+
   } else {
     response = await fetch(CONFIG.CLAUDE_API_URL, {
       method: 'POST',

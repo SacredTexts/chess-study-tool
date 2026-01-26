@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.10.1] - 2026-01-27
+
+### Fixed
+- **Vision prompt truncation bug** - Claude Opus was outputting verbose step-by-step analysis instead of JSON, hitting max_tokens limit before completing the response
+  - Condensed vision prompt from ~50 lines to ~20 lines
+  - Added explicit JSON-only instruction at start and end of prompt
+  - Increased max_tokens from 1000 to 5000 as safety buffer
+
+## [2.10.0] - 2026-01-27
+
+### Added
+- **Multi-Provider Vision Support** - Configure multiple AI providers simultaneously
+  - Anthropic (Direct) with Claude Opus/Sonnet/Haiku models
+  - OpenRouter with Gemini 3 Flash Preview
+  - BigModel (Zhipu AI) with GLM-4V/GLM-4V Plus
+- **Side-by-side Model Comparison** - Run multiple Vision models and compare results
+  - Star icon (★) marks default provider for Stockfish/explanation
+  - Checkbox enables providers for comparison mode
+  - Unified diff view shows where models disagree on piece placement
+- **Model Agreement Display** - Shows which models agree/disagree on the position
+  - ✓ for models that match the default
+  - ⚠ for disagreements with specific square and piece differences
+
+### Changed
+- Settings UI reorganized into 3 separate provider sections
+- Each provider has independent API key and model selection
+- Auto-detects which providers have API keys configured
+- Parallel Vision analysis when multiple providers enabled
+
+## [2.9.2] - 2025-01-26
+
+### Added
+- **Debug logging system** - Stores detailed API responses in chrome.storage.local
+- **Debug Logs UI** in Settings panel with View/Download/Clear buttons
+- Full raw Vision API response logging for troubleshooting
+- Downloadable debug logs as text file with timestamps
+
+### Fixed
+- Better error messages showing specific Vision errors
+- "Failed to parse Vision response" now points users to debug logs
+
+## [2.9.1] - 2025-01-26
+
+### Fixed
+- Improved Vision prompt for better FEN accuracy
+- Added step-by-step board reading process
+- Added piece shape descriptions to reduce knight/pawn confusion
+- Added mandatory validation step with pawn counts in output
+
 ## [2.9.0] - 2025-01-26
 
 ### Added
