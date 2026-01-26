@@ -304,10 +304,19 @@ async function handleAnalysis(imageData) {
 
     // Step 2: Stockfish - get best moves (using default provider's FEN)
     console.log('[Chess Study] Step 2: Getting Stockfish analysis...');
-    console.log('[Chess Study] FEN to analyze:', defaultResult.fen);
+
+    // Build FEN with turn from Vision response if the FEN only has piece placement
+    let fenForStockfish = defaultResult.fen;
+    const fenParts = defaultResult.fen.trim().split(' ');
+    if (fenParts.length === 1 && defaultResult.turn) {
+      // FEN only has piece placement, append the turn from Vision response
+      fenForStockfish = `${defaultResult.fen} ${defaultResult.turn}`;
+      console.log('[Chess Study] Added turn to FEN from Vision response:', fenForStockfish);
+    }
+    console.log('[Chess Study] FEN to analyze:', fenForStockfish);
     let moves;
     try {
-      moves = await getStockfishMoves(defaultResult.fen, settings.depth, settings.numMoves);
+      moves = await getStockfishMoves(fenForStockfish, settings.depth, settings.numMoves);
       console.log('[Chess Study] Stockfish moves:', moves);
     } catch (stockfishError) {
       console.error('[Chess Study] Stockfish error:', stockfishError);
@@ -829,16 +838,17 @@ function normalizeFEN(fen) {
 async function getStockfishMoves(fen, depth, numMoves) {
   console.log('[Chess Study] Raw FEN from Vision:', fen);
 
-  // Validate FEN
-  const validation = validateFEN(fen);
+  // Normalize FEN first to ensure all 6 fields with valid values
+  // This handles cases where Vision API returns only the piece placement part
+  const normalizedFEN = normalizeFEN(fen);
+  console.log('[Chess Study] Normalized FEN:', normalizedFEN);
+
+  // Validate the normalized FEN
+  const validation = validateFEN(normalizedFEN);
   if (!validation.valid) {
     console.error('[Chess Study] FEN validation failed:', validation.error);
     throw new Error(`Invalid FEN: ${validation.error}`);
   }
-
-  // Normalize FEN to ensure all 6 fields with valid values
-  const normalizedFEN = normalizeFEN(fen);
-  console.log('[Chess Study] Normalized FEN:', normalizedFEN);
 
   const targetMoves = Math.min(numMoves, 5);
 
