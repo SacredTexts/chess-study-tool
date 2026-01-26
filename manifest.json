@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Chess Study Tool - AI Analysis",
-  "version": "2.2.0",
-  "description": "Standalone chess learning tool - captures screenshots and provides AI-powered analysis in a separate window. No interaction with chess websites.",
+  "version": "2.8.0",
+  "description": "Standalone chess learning tool - captures screenshots and provides AI-powered analysis. No interaction with chess websites.",
   
   "permissions": [
     "storage",
     "activeTab",
-    "tabs"
+    "tabs",
+    "sidePanel"
   ],
   
   "host_permissions": [
@@ -30,16 +31,13 @@
     "default_title": "Open Chess Study Tool"
   },
   
+  "side_panel": {
+    "default_path": "src/panel/panel.html"
+  },
+  
   "icons": {
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
-  },
-  
-  "web_accessible_resources": [
-    {
-      "resources": ["src/lib/*"],
-      "matches": ["<all_urls>"]
-    }
-  ]
+  }
 }

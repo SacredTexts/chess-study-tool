@@ -21,49 +21,13 @@ const CONFIG = {
   CLAUDE_MODEL: 'claude-sonnet-4-5-20250929'
 };
 
-// Track the panel window
-let panelWindowId = null;
-let targetWindowId = null; // The window to capture (where user was before opening panel)
-
 // ============================================================================
-// EXTENSION ICON CLICK - Open persistent window
+// EXTENSION ICON CLICK - Open Side Panel
 // ============================================================================
 
 chrome.action.onClicked.addListener(async (tab) => {
-  // Store the window the user was on (the one with the chess board)
-  targetWindowId = tab.windowId;
-  
-  // Check if panel window already exists
-  if (panelWindowId !== null) {
-    try {
-      const existingWindow = await chrome.windows.get(panelWindowId);
-      // Window exists, focus it
-      await chrome.windows.update(panelWindowId, { focused: true });
-      return;
-    } catch (e) {
-      // Window was closed, reset ID
-      panelWindowId = null;
-    }
-  }
-  
-  // Create new panel window (positioned on right side)
-  const panelWindow = await chrome.windows.create({
-    url: chrome.runtime.getURL('src/panel/panel.html'),
-    type: 'popup',
-    width: 450,
-    height: 700,
-    top: 100,
-    left: 1400  // Fixed position - will be on right side of most screens
-  });
-  
-  panelWindowId = panelWindow.id;
-});
-
-// Clean up when panel window is closed
-chrome.windows.onRemoved.addListener((windowId) => {
-  if (windowId === panelWindowId) {
-    panelWindowId = null;
-  }
+  // Open the side panel
+  await chrome.sidePanel.open({ windowId: tab.windowId });
 });
 
 // ============================================================================
@@ -115,32 +79,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function handleCapture(sendResponse) {
   try {
-    // Use the stored target window (where the chess board is)
-    // If no target window stored, try to find a suitable window
-    let windowIdToCapture = targetWindowId;
+    // Get the current active tab in the current window
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    if (!windowIdToCapture) {
-      // Find the most recent non-panel window
-      const windows = await chrome.windows.getAll({ windowTypes: ['normal'] });
-      const nonPanelWindows = windows.filter(w => w.id !== panelWindowId);
-      if (nonPanelWindows.length > 0) {
-        // Use the first (most recent) normal window
-        windowIdToCapture = nonPanelWindows[0].id;
-      }
-    }
-    
-    if (!windowIdToCapture) {
-      sendResponse({ success: false, error: 'No window to capture. Please open a browser window with a chess position.' });
+    if (!activeTab) {
+      sendResponse({ success: false, error: 'No active tab found. Please open a tab with a chess position.' });
       return;
     }
     
-    // Capture the visible area of the target window
-    const imageData = await chrome.tabs.captureVisibleTab(windowIdToCapture, {
+    // Capture the visible area of the active tab's window
+    const imageData = await chrome.tabs.captureVisibleTab(activeTab.windowId, {
       format: 'png',
       quality: 100
     });
     
-    console.log('[Chess Study] Screenshot captured from window', windowIdToCapture);
+    console.log('[Chess Study] Screenshot captured from tab', activeTab.id);
     sendResponse({ success: true, imageData });
     
   } catch (error) {
@@ -240,7 +193,7 @@ async function analyzeWithVision(imageDataUrl, apiKey, provider = 'anthropic', m
   const prompt = `You are a chess position analyzer. Look at this screenshot and find any chess board visible.
 
 Your task:
-1. Locate the chess board in the image (it could be from any website, app, or even a physical board)
+1. Locate the chess board in the image
 2. Carefully identify every piece and its exact square
 3. Determine whose turn it is (look for visual cues like clocks, highlights, or turn indicators)
 4. Convert the position to FEN notation
@@ -248,38 +201,48 @@ Your task:
 PIECE IDENTIFICATION:
 - White pieces: K (King), Q (Queen), R (Rook), B (Bishop), N (Knight), P (Pawn) - usually lighter colored
 - Black pieces: k, q, r, b, n, p - usually darker colored
-- Be careful to distinguish between Bishops and Pawns, and between Knights and other pieces
 
 BOARD ORIENTATION:
 - Standard view: White pieces start on ranks 1-2, Black on ranks 7-8
 - If viewing from Black's side, mentally flip the board
 - The a1 square is always dark (from White's perspective, bottom-left)
 
-FEN FORMAT REQUIREMENTS:
-The FEN string MUST have exactly 6 space-separated parts:
-1. Piece placement (8 ranks separated by /, using letters for pieces and numbers 1-8 for empty squares)
-2. Active color: "w" or "b"
-3. Castling availability: combination of "K", "Q", "k", "q" or "-" if none
-4. En passant target square: like "e3" or "-" if none
-5. Halfmove clock: a number (use "0" if unknown)
-6. Fullmove number: a number (use "1" if unknown)
+CRITICAL RULES FOR FEN:
+1. Each side starts with EXACTLY 8 pawns - if a pawn has moved, it's NO LONGER on its starting square
+2. When a pawn moves from e2 to e4, rank 2 shows "PPPP1PPP" (missing the e-pawn), NOT "PPPPPPPP"
+3. Count pieces carefully: White has max 8 pawns, Black has max 8 pawns
+4. Pawns CANNOT be on rank 1 or rank 8 (they would promote)
+5. Each rank in FEN must sum to exactly 8 squares
 
-OUTPUT FORMAT (JSON only, no other text):
+FEN FORMAT (exactly 6 space-separated parts):
+1. Piece placement (8 ranks separated by /)
+2. Active color: "w" or "b"
+3. Castling: "KQkq", "Kq", "-", etc.
+4. En passant: square like "e3" or "-"
+5. Halfmove clock: number (use "0")
+6. Fullmove: number (use "1")
+
+VALIDATION CHECKLIST before responding:
+□ Exactly 8 ranks separated by /
+□ Each rank sums to 8 (pieces + numbers)
+□ White pawns ≤ 8, Black pawns ≤ 8
+□ No pawns on ranks 1 or 8
+□ Exactly 1 white King, 1 black King
+□ Moved pieces are NOT on their original squares
+
+OUTPUT FORMAT (JSON only):
 {
-  "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
-  "turn": "b",
-  "description": "King's Pawn Opening after 1.e4",
+  "fen": "rnbqkbnr/ppppp1pp/8/5p2/3P4/8/PPP1PPPP/RNBQKBNR w KQkq f6 0 2",
+  "turn": "w",
+  "description": "Dutch Defense after 1.d4 f5",
   "confidence": "high"
 }
 
 If NO chess board is found:
 {
   "fen": null,
-  "error": "No chess board detected in screenshot"
-}
-
-CRITICAL: Each rank in the FEN must sum to exactly 8 (pieces + empty squares).
-Example: "rnbqkbnr" = 8 pieces, "4P3" = 4+1+3 = 8, "8" = 8 empty squares.`;
+  "error": "No chess board detected"
+}`;
 
   let response;
   let data;
@@ -431,13 +394,14 @@ function validateFEN(fen) {
     return { valid: false, error: `Board should have 8 ranks, got ${ranks.length}` };
   }
   
-  // Count kings
-  let whiteKings = 0;
-  let blackKings = 0;
+  // Count pieces
+  let whiteKings = 0, blackKings = 0;
+  let whitePawns = 0, blackPawns = 0;
   
   // Validate each rank
   for (let i = 0; i < 8; i++) {
     const rank = ranks[i];
+    const rankNum = 8 - i; // Rank 8 is index 0, rank 1 is index 7
     let squares = 0;
     
     for (const char of rank) {
@@ -447,13 +411,27 @@ function validateFEN(fen) {
         squares += 1;
         if (char === 'K') whiteKings++;
         if (char === 'k') blackKings++;
+        if (char === 'P') {
+          whitePawns++;
+          // Pawns can't be on rank 1 or 8
+          if (rankNum === 1 || rankNum === 8) {
+            return { valid: false, error: `White pawn on rank ${rankNum} is illegal` };
+          }
+        }
+        if (char === 'p') {
+          blackPawns++;
+          // Pawns can't be on rank 1 or 8
+          if (rankNum === 1 || rankNum === 8) {
+            return { valid: false, error: `Black pawn on rank ${rankNum} is illegal` };
+          }
+        }
       } else {
-        return { valid: false, error: `Invalid character '${char}' in rank ${8 - i}` };
+        return { valid: false, error: `Invalid character '${char}' in rank ${rankNum}` };
       }
     }
     
     if (squares !== 8) {
-      return { valid: false, error: `Rank ${8 - i} has ${squares} squares, should have 8` };
+      return { valid: false, error: `Rank ${rankNum} has ${squares} squares, should have 8` };
     }
   }
   
@@ -463,6 +441,14 @@ function validateFEN(fen) {
   }
   if (blackKings !== 1) {
     return { valid: false, error: `Must have exactly 1 black King, found ${blackKings}` };
+  }
+  
+  // Maximum 8 pawns per side
+  if (whitePawns > 8) {
+    return { valid: false, error: `White has ${whitePawns} pawns, maximum is 8` };
+  }
+  if (blackPawns > 8) {
+    return { valid: false, error: `Black has ${blackPawns} pawns, maximum is 8` };
   }
   
   // Validate turn
@@ -603,13 +589,15 @@ async function getStockfishMoves(fen, depth, numMoves) {
 }
 
 function normalizeMove(d) {
-  console.log('[Chess Study] Normalizing move:', d);
+  console.log('[Chess Study] Normalizing move:', JSON.stringify(d));
   
   // Handle string input (just the move notation)
   if (typeof d === 'string') {
     return {
       move: d,
       san: d,
+      from: d.substring(0, 2),
+      to: d.substring(2, 4),
       evaluation: 0,
       depth: 0,
       continuation: [],
@@ -617,10 +605,28 @@ function normalizeMove(d) {
     };
   }
   
+  // Build the move string from from/to if available
+  let moveStr = d.move || d.lan || '';
+  let fromSquare = d.from || '';
+  let toSquare = d.to || '';
+  
+  // If we have from/to but no move string, build it
+  if (!moveStr && fromSquare && toSquare) {
+    moveStr = fromSquare + toSquare;
+  }
+  
+  // If we have move string but no from/to, parse it
+  if (moveStr && moveStr.length >= 4 && !fromSquare) {
+    fromSquare = moveStr.substring(0, 2);
+    toSquare = moveStr.substring(2, 4);
+  }
+  
   // Handle object input
   return {
-    move: d.move || d.lan || d.from + d.to || '',
+    move: moveStr,
     san: d.san || d.move || d.lan || '',
+    from: fromSquare,
+    to: toSquare,
     evaluation: d.eval ?? d.score ?? d.evaluation ?? (d.centipawns ? d.centipawns / 100 : 0),
     depth: d.depth || 0,
     continuation: d.continuationArr || d.continuation || (d.pv ? d.pv.split(' ') : []),

@@ -47,7 +47,16 @@ A Chrome extension that analyzes chess positions from any source using AI vision
 ## Usage
 
 1. Open any website with a chess board (chess.com, lichess.org, etc.)
-2. Click the Chess Study Tool extension icon
+2. Click the Chess Study Tool extension icon - the **side panel** opens on the right
+3. Select "I am White" or "I am Black" using the toggle
+4. Click "📸 Capture & Analyze Screen"
+5. View the best moves with explanations
+6. Click any move to see it highlighted on the board
+
+**Side Panel Features:**
+- Stays open when you switch tabs
+- Doesn't create multiple windows
+- Click extension icon again to close
 3. Click "📸 Capture & Analyze"
 4. View the analysis:
    - Detected position (FEN)

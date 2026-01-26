@@ -2,6 +2,89 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.0] - 2025-01-26
+
+### Changed
+- **Major**: Converted from popup window to Chrome Side Panel
+- Panel now stays open when switching tabs
+- No more multiple windows opening
+- Click extension icon to toggle side panel
+- Panel docks to the right side of browser
+
+### Fixed
+- Simplified screenshot capture to use active tab
+
+## [2.7.0] - 2025-01-26
+
+### Changed
+- Move display now shows full info: "♗ Bishop f1 → b5" format
+- All 5 moves shown in vertical list (not just 1)
+- Best move (#1) has green background, others are normal
+- Clicking any move updates the Board Position visualization
+- Active/selected move is highlighted with blue border
+
+## [2.6.1] - 2025-01-26
+
+### Changed
+- Moved "I am White/Black" toggle to below the capture button for easier access
+
+## [2.6.0] - 2025-01-26
+
+### Added
+- "I am White/Black" toggle switch for board orientation
+- Compact move display like reference image (piece icon + square)
+- Click on any move to highlight it on the main board
+- Better move parsing with from/to square detection
+
+### Changed
+- Move display now uses grid layout (2 columns)
+- Board properly flips when toggling playing side
+- Improved move highlighting with direct from/to coordinates
+
+### Removed
+- Old button-style White/Black selector
+- Mini boards in move list (cleaner compact display)
+
+### Fixed
+- Move coordinates now properly parsed from Stockfish API
+- Board squares correctly highlight for selected move
+
+## [2.5.0] - 2025-01-26
+
+### Added
+- Mini chess boards for each move in the move list
+- SVG arrows showing the move (from → to)
+- Highlighted squares: yellow for origin, green for destination
+- Each move card now shows visual representation of the move
+
+### Changed
+- Move cards now have vertical layout (header + mini board)
+- More compact move notation with visual board below
+
+## [2.4.0] - 2025-01-26
+
+### Added
+- Visual chess board showing the position with all pieces
+- Best move highlighting (green squares show from→to)
+- Unicode chess pieces (♔♕♖♗♘♙ / ♚♛♜♝♞♟)
+- Board coordinates (a-h files, 1-8 ranks)
+- Move legend showing highlight meaning
+
+### Removed
+- Mermaid.js diagram library (no longer needed)
+- Move tree visualization (replaced with visual board)
+
+### Changed
+- Board is now shown even when Stockfish fails (partial results)
+
+## [2.3.1] - 2025-01-26
+
+### Fixed
+- Claude Vision double-counting pawns (keeping original + moved position)
+- Added pawn count validation (max 8 per side)
+- Added pawn rank validation (no pawns on ranks 1 or 8)
+- Improved Vision prompt with explicit checklist for piece counting
+
 ## [2.3.0] - 2025-01-26
 
 ### Added
