@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Chess Study Tool - AI Analysis",
+  "version": "2.2.0",
+  "description": "Standalone chess learning tool - captures screenshots and provides AI-powered analysis in a separate window. No interaction with chess websites.",
+  
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
+  
+  "host_permissions": [
+    "https://chess-api.com/*",
+    "https://api.anthropic.com/*",
+    "https://openrouter.ai/*"
+  ],
+  
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  
+  "action": {
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    },
+    "default_title": "Open Chess Study Tool"
+  },
+  
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["src/lib/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
