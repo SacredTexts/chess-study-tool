@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.0] - 2025-01-26
+
+### Added
+- **Claude Opus 4.5** model option for best vision accuracy
+- **Lichess Cloud Eval API** integration for multiple move analysis
+- Returns up to 5 best moves with evaluations (was limited to 1)
+- Rate limiting protection with automatic backoff
+- Version number displayed in header and settings
+
+### Changed
+- Default model changed from Sonnet 4.5 to **Opus 4.5** (best for board recognition)
+- Stockfish analysis now uses Lichess (50+ ply depth, pre-computed)
+- Chess-API.com kept as fallback if Lichess unavailable
+- Settings footer shows "Powered by Claude Vision & Lichess"
+
+### Fixed
+- Multiple moves now properly returned (Lichess supports MultiPV)
+- Better error handling for rate limits and unavailable positions
+
 ## [2.8.0] - 2025-01-26
 
 ### Changed

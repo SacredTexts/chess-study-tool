@@ -1,0 +1,52 @@
+[
+  {
+    "session_id": "7fed2e64-f876-4eed-92d6-15f081ca8147",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7fed2e64-f876-4eed-92d6-15f081ca8147.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "af87425",
+    "agent_transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/7fed2e64-f876-4eed-92d6-15f081ca8147/subagents/agent-af87425.jsonl"
+  },
+  {
+    "session_id": "196bccc8-6e26-438d-a15e-5e1c6de53d62",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "a6b734b",
+    "agent_transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62/subagents/agent-a6b734b.jsonl"
+  },
+  {
+    "session_id": "196bccc8-6e26-438d-a15e-5e1c6de53d62",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "af1be22",
+    "agent_transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62/subagents/agent-af1be22.jsonl"
+  },
+  {
+    "session_id": "196bccc8-6e26-438d-a15e-5e1c6de53d62",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "a2dde7d",
+    "agent_transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62/subagents/agent-a2dde7d.jsonl"
+  },
+  {
+    "session_id": "196bccc8-6e26-438d-a15e-5e1c6de53d62",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "SubagentStop",
+    "stop_hook_active": false,
+    "agent_id": "ae2a530",
+    "agent_transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/196bccc8-6e26-438d-a15e-5e1c6de53d62/subagents/agent-ae2a530.jsonl"
+  }
+]

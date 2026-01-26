@@ -15,10 +15,11 @@
 // ============================================================================
 
 const CONFIG = {
-  CHESS_API_URL: 'https://chess-api.com/v1',
+  LICHESS_CLOUD_EVAL_URL: 'https://lichess.org/api/cloud-eval',
+  CHESS_API_URL: 'https://chess-api.com/v1', // Fallback
   CLAUDE_API_URL: 'https://api.anthropic.com/v1/messages',
   OPENROUTER_API_URL: 'https://openrouter.ai/api/v1/chat/completions',
-  CLAUDE_MODEL: 'claude-sonnet-4-5-20250929'
+  CLAUDE_MODEL: 'claude-opus-4-5-20251101'
 };
 
 // ============================================================================
@@ -112,7 +113,7 @@ async function handleAnalysis(imageData) {
     const settings = await chrome.storage.sync.get({
       claudeApiKey: '',
       apiProvider: 'anthropic',
-      apiModel: 'claude-sonnet-4-5-20250929',
+      apiModel: 'claude-opus-4-5-20251101',
       numMoves: 5,
       depth: 18
     });
@@ -251,10 +252,12 @@ If NO chess board is found:
     // OpenRouter API
     // Map Anthropic model IDs to OpenRouter format
     let openRouterModel = model;
-    if (model.includes('claude-sonnet-4-5')) {
-      openRouterModel = 'anthropic/claude-sonnet-4.5';
+    if (model.includes('claude-opus-4-5')) {
+      openRouterModel = 'anthropic/claude-opus-4';
+    } else if (model.includes('claude-sonnet-4-5')) {
+      openRouterModel = 'anthropic/claude-sonnet-4';
     } else if (model.includes('claude-haiku-4-5')) {
-      openRouterModel = 'anthropic/claude-haiku-4.5';
+      openRouterModel = 'anthropic/claude-haiku-4';
     } else if (model.startsWith('claude-')) {
       openRouterModel = `anthropic/${model}`;
     }
@@ -489,26 +492,153 @@ function normalizeFEN(fen) {
 
 async function getStockfishMoves(fen, depth, numMoves) {
   console.log('[Chess Study] Raw FEN from Vision:', fen);
-  
+
   // Validate FEN
   const validation = validateFEN(fen);
   if (!validation.valid) {
     console.error('[Chess Study] FEN validation failed:', validation.error);
     throw new Error(`Invalid FEN: ${validation.error}`);
   }
-  
+
   // Normalize FEN to ensure all 6 fields with valid values
   const normalizedFEN = normalizeFEN(fen);
   console.log('[Chess Study] Normalized FEN:', normalizedFEN);
-  
+
+  const targetMoves = Math.min(numMoves, 5);
+
+  // Try Lichess Cloud Eval first (supports multiple variations)
+  try {
+    const moves = await getLichessCloudEval(normalizedFEN, targetMoves);
+    if (moves.length > 0) {
+      console.log(`[Chess Study] Got ${moves.length} moves from Lichess`);
+      return moves;
+    }
+  } catch (lichessError) {
+    console.warn('[Chess Study] Lichess API failed:', lichessError.message);
+
+    // If position not in database or rate limited, try fallback
+    if (lichessError.message.includes('not in Lichess') ||
+        lichessError.message.includes('Rate limited')) {
+      console.log('[Chess Study] Falling back to Chess-API.com (1 move only)');
+    }
+  }
+
+  // Fallback to Chess-API.com (only returns 1 move)
+  console.log('[Chess Study] Using Chess-API fallback');
+  const fallbackMoves = await getChessApiMove(normalizedFEN, depth);
+  if (fallbackMoves.length > 0) {
+    console.log('[Chess Study] Got 1 move from Chess-API fallback');
+  }
+  return fallbackMoves;
+}
+
+// Rate limiting state for Lichess
+let lichessLastRequest = 0;
+let lichessBackoffUntil = 0;
+const LICHESS_MIN_INTERVAL = 1000; // 1 second between requests
+const LICHESS_BACKOFF_TIME = 60000; // 1 minute backoff on 429
+
+// Lichess Cloud Eval API - supports multiple principal variations
+async function getLichessCloudEval(fen, numMoves, retryCount = 0) {
+  const now = Date.now();
+
+  // Check if we're in backoff period
+  if (now < lichessBackoffUntil) {
+    const waitTime = Math.ceil((lichessBackoffUntil - now) / 1000);
+    throw new Error(`Rate limited. Please wait ${waitTime}s before next analysis.`);
+  }
+
+  // Ensure minimum interval between requests
+  const timeSinceLastRequest = now - lichessLastRequest;
+  if (timeSinceLastRequest < LICHESS_MIN_INTERVAL) {
+    const delay = LICHESS_MIN_INTERVAL - timeSinceLastRequest;
+    console.log(`[Chess Study] Waiting ${delay}ms before Lichess request`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+
+  lichessLastRequest = Date.now();
+  const url = `${CONFIG.LICHESS_CLOUD_EVAL_URL}?fen=${encodeURIComponent(fen)}&multiPv=${numMoves}`;
+  console.log('[Chess Study] Lichess request:', url);
+
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      lichessBackoffUntil = Date.now() + LICHESS_BACKOFF_TIME;
+      console.warn('[Chess Study] Rate limited by Lichess, backing off for 60s');
+
+      // Retry once after backoff if this is the first attempt
+      if (retryCount === 0) {
+        throw new Error('Rate limited by Lichess. Will use fallback.');
+      }
+      throw new Error('Rate limited by Lichess. Please wait a minute.');
+    }
+    if (response.status === 404) {
+      throw new Error('Position not in Lichess cloud database');
+    }
+    throw new Error(`Lichess API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('[Chess Study] Lichess response:', JSON.stringify(data, null, 2));
+
+  if (!data.pvs || !Array.isArray(data.pvs) || data.pvs.length === 0) {
+    throw new Error('No analysis available from Lichess');
+  }
+
+  const moves = data.pvs.map((pv, index) => {
+    const moveList = pv.moves.split(' ');
+    const firstMove = moveList[0]; // UCI format: e2e4, f1b5, etc.
+    const from = firstMove.substring(0, 2);
+    const to = firstMove.substring(2, 4);
+    const promotion = firstMove.length > 4 ? firstMove[4] : null;
+
+    // Convert centipawns to pawns (or handle mate)
+    let evaluation;
+    if (pv.mate !== undefined && pv.mate !== null) {
+      evaluation = pv.mate > 0 ? `M${pv.mate}` : `M${pv.mate}`;
+    } else {
+      evaluation = (pv.cp || 0) / 100;
+    }
+
+    return {
+      move: firstMove,
+      san: firstMove, // We don't have SAN from Lichess, will show UCI
+      from: from,
+      to: to,
+      promotion: promotion,
+      evaluation: evaluation,
+      depth: data.depth || 0,
+      continuation: moveList,
+      continuationArr: moveList,
+      winChance: cpToWinChance(pv.cp || 0)
+    };
+  });
+
+  console.log('[Chess Study] Parsed Lichess moves:', moves);
+  return moves;
+}
+
+// Convert centipawns to win chance percentage
+function cpToWinChance(cp) {
+  // Using the standard formula: 50 + 50 * (2 / (1 + exp(-0.004 * cp)) - 1)
+  return 50 + 50 * (2 / (1 + Math.exp(-0.004 * cp)) - 1);
+}
+
+// Fallback: Chess-API.com (only returns 1 move)
+async function getChessApiMove(fen, depth) {
+  console.log('[Chess Study] Using Chess-API fallback');
+
   const requestBody = {
-    fen: normalizedFEN,
+    fen: fen,
     depth: Math.min(depth, 18),
-    variants: Math.min(numMoves, 5),
     maxThinkingTime: 100
   };
-  console.log('[Chess Study] Request body:', JSON.stringify(requestBody));
-  
+
   const response = await fetch(CONFIG.CHESS_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -516,76 +646,20 @@ async function getStockfishMoves(fen, depth, numMoves) {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[Chess Study] Stockfish API error:', response.status, errorText);
-    throw new Error(`Stockfish API error: ${response.status}`);
+    throw new Error(`Chess API error: ${response.status}`);
   }
 
   const data = await response.json();
-  console.log('[Chess Study] Raw Stockfish response:', JSON.stringify(data));
-  
-  // Check for error response from chess-api.com
+
   if (data.type && data.type.includes('ERROR')) {
-    console.error('[Chess Study] Chess API returned error:', data.type, data.text);
-    console.error('[Chess Study] FEN that caused error:', normalizedFEN);
-    throw new Error(`${data.text || data.type}\nFEN: ${normalizedFEN}`);
+    throw new Error(`${data.text || data.type}`);
   }
-  
-  // Handle various response formats from Chess-API.com
-  const moves = [];
-  
-  // Format 1: Array of moves
-  if (Array.isArray(data)) {
-    console.log('[Chess Study] Response is array with', data.length, 'items');
-    data.forEach(d => moves.push(normalizeMove(d)));
-  } 
-  // Format 2: Single move object with 'move' or 'lan' property
-  else if (data && (data.move || data.lan || data.san)) {
-    console.log('[Chess Study] Response is single move object');
-    moves.push(normalizeMove(data));
+
+  if (data && (data.move || data.lan || data.san)) {
+    return [normalizeMove(data)];
   }
-  // Format 3: Object with nested data
-  else if (data && data.data) {
-    console.log('[Chess Study] Response has nested data property');
-    if (Array.isArray(data.data)) {
-      data.data.forEach(d => moves.push(normalizeMove(d)));
-    } else {
-      moves.push(normalizeMove(data.data));
-    }
-  }
-  // Format 4: Object with 'bestmove' property
-  else if (data && data.bestmove) {
-    console.log('[Chess Study] Response has bestmove property');
-    moves.push({
-      move: data.bestmove,
-      san: data.san || data.bestmove,
-      evaluation: data.eval || data.score || 0,
-      depth: data.depth,
-      continuation: data.pv ? data.pv.split(' ') : [],
-      winChance: data.winChance
-    });
-  }
-  // Format 5: Check for error in response
-  else if (data && data.error) {
-    console.error('[Chess Study] API returned error:', data.error);
-    throw new Error('Chess API error: ' + data.error);
-  }
-  else {
-    console.warn('[Chess Study] Unknown response format:', data);
-    // Try to extract any useful info
-    if (data && typeof data === 'object') {
-      const keys = Object.keys(data);
-      console.log('[Chess Study] Response keys:', keys);
-    }
-  }
-  
-  console.log('[Chess Study] Parsed moves:', moves);
-  
-  if (moves.length === 0) {
-    console.warn('[Chess Study] No moves parsed from response');
-  }
-  
-  return moves;
+
+  return [];
 }
 
 function normalizeMove(d) {
@@ -674,10 +748,12 @@ Keep it under 150 words. Be instructive and clear.`;
   if (provider === 'openrouter') {
     // Map Anthropic model IDs to OpenRouter format
     let openRouterModel = model;
-    if (model.includes('claude-sonnet-4-5')) {
-      openRouterModel = 'anthropic/claude-sonnet-4.5';
+    if (model.includes('claude-opus-4-5')) {
+      openRouterModel = 'anthropic/claude-opus-4';
+    } else if (model.includes('claude-sonnet-4-5')) {
+      openRouterModel = 'anthropic/claude-sonnet-4';
     } else if (model.includes('claude-haiku-4-5')) {
-      openRouterModel = 'anthropic/claude-haiku-4.5';
+      openRouterModel = 'anthropic/claude-haiku-4';
     } else if (model.startsWith('claude-')) {
       openRouterModel = `anthropic/${model}`;
     }
@@ -805,11 +881,29 @@ async function testAnthropicAPI(apiKey, provider = 'anthropic') {
 }
 
 async function testStockfishAPI() {
-  console.log('[Chess Study] Testing Stockfish API...');
-  
-  // Test with starting position
-  const testFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-  
+  console.log('[Chess Study] Testing Stockfish APIs...');
+
+  // Test with a common position that should be in Lichess cloud
+  const testFen = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
+
+  // Try Lichess first
+  try {
+    const lichessUrl = `${CONFIG.LICHESS_CLOUD_EVAL_URL}?fen=${encodeURIComponent(testFen)}&multiPv=3`;
+    const lichessResponse = await fetch(lichessUrl, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (lichessResponse.ok) {
+      const data = await lichessResponse.json();
+      console.log('[Chess Study] Lichess test success:', data);
+      const moveCount = data.pvs?.length || 0;
+      return { success: true, move: `Lichess OK (${moveCount} variations)` };
+    }
+  } catch (lichessError) {
+    console.warn('[Chess Study] Lichess test failed:', lichessError.message);
+  }
+
+  // Fallback to Chess-API.com
   try {
     const response = await fetch(CONFIG.CHESS_API_URL, {
       method: 'POST',
@@ -817,29 +911,27 @@ async function testStockfishAPI() {
       body: JSON.stringify({
         fen: testFen,
         depth: 10,
-        variants: 1
+        maxThinkingTime: 100
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Chess Study] Stockfish test failed:', response.status, errorText);
+      console.error('[Chess Study] Chess-API test failed:', response.status, errorText);
       return { success: false, error: `HTTP ${response.status}` };
     }
 
     const data = await response.json();
-    console.log('[Chess Study] Stockfish test success:', data);
-    
+    console.log('[Chess Study] Chess-API test success:', data);
+
     // Extract the move from response
-    let move = 'Unknown';
-    if (Array.isArray(data) && data.length > 0) {
-      move = data[0].san || data[0].move || 'OK';
-    } else if (data.san || data.move) {
-      move = data.san || data.move;
+    let move = 'Chess-API OK';
+    if (data.san || data.move) {
+      move = `Chess-API: ${data.san || data.move}`;
     }
-    
+
     return { success: true, move };
-    
+
   } catch (error) {
     console.error('[Chess Study] Stockfish test error:', error);
     return { success: false, error: error.message };

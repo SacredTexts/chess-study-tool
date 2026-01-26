@@ -142,7 +142,7 @@ async function loadSettings() {
   const settings = await chrome.storage.sync.get({
     claudeApiKey: '',
     apiProvider: 'anthropic',
-    apiModel: 'claude-sonnet-4-5-20250929',
+    apiModel: 'claude-opus-4-5-20251101',
     numMoves: 5,
     depth: 18
   });

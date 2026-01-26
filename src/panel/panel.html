@@ -48,7 +48,16 @@
     .header-title .icon {
       font-size: 20px;
     }
-    
+
+    .version-badge {
+      font-size: 10px;
+      color: #888;
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
     .header-right {
       display: flex;
       align-items: center;
@@ -1023,7 +1032,28 @@
       color: #666;
       margin-right: 8px;
     }
-    
+
+    /* ============ SETTINGS FOOTER ============ */
+    .settings-footer {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+
+    .settings-version {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .settings-credits {
+      display: block;
+      font-size: 10px;
+      color: #555;
+    }
+
     /* ============ NOTICE ============ */
     .notice {
       background: rgba(52, 152, 219, 0.1);
@@ -1052,6 +1082,7 @@
     <div class="header-title">
       <span class="icon">♟️</span>
       <h1>Chess Study Tool</h1>
+      <span class="version-badge">v2.9.0</span>
     </div>
     <div class="header-right">
       <div class="header-indicators" title="API Status">
@@ -1183,10 +1214,11 @@
       <div class="form-group">
         <label for="api-model">Model</label>
         <select id="api-model">
-          <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Recommended)</option>
+          <option value="claude-opus-4-5-20251101">Claude Opus 4.5 (Best Accuracy)</option>
+          <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5 (Balanced)</option>
           <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (Faster/Cheaper)</option>
         </select>
-        <p class="form-hint">Sonnet 4.5 is best for accurate board recognition.</p>
+        <p class="form-hint">Opus 4.5 is best for accurate board recognition. Sonnet is a good balance of speed and accuracy.</p>
       </div>
       <div class="form-group">
         <label for="api-key">API Key</label>
@@ -1268,6 +1300,12 @@
         </div>
         <div class="error-log-content" id="error-log-content"></div>
       </div>
+    </div>
+
+    <!-- Version Footer -->
+    <div class="settings-footer">
+      <span class="settings-version">Chess Study Tool v2.9.0</span>
+      <span class="settings-credits">Powered by Claude Vision & Lichess</span>
     </div>
   </div>
 
