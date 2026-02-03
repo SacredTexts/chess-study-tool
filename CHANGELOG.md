@@ -2,17 +2,70 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.7.0] - 2026-02-04
+
+### Added
+- **Middle-click capture** - Press mouse wheel on chess.com to trigger capture (content script listener)
+- **New extension icon** - White chess knight on black background
+
+### Changed
+- DOM extraction now uses `chrome.scripting.executeScript` instead of content script messaging for reliability on chess.com SPA navigation
+- Added `scripting` permission to manifest
+- Header shortcut badge changed from "Alt+S" to stacked "Mouse Wheel"
+- Updated CLAUDE.md with versioning rules and current architecture
+
+## [3.6.0] - 2026-02-04
+
+### Added
+- **Chess.com DOM extraction** - Reads piece positions directly from chess.com's page structure instead of relying on AI vision, giving 100% accurate board detection on chess.com
+- **Content script** for chess.com (`src/content/chess-com.js`) - passive, read-only observer that extracts piece positions and turn information
+- **Source indicator** - Status bar shows whether position was read via "DOM read" or "Vision AI"
+- **Automatic fallback** - If DOM extraction fails (wrong site, DOM changes, etc.), seamlessly falls back to the existing vision API pipeline
+
+### Changed
+- Analysis pipeline now tries DOM extraction first before using vision API
+- Updated manifest with content_scripts entry for chess.com
+- Updated description to reflect new capabilities
+
+## [3.0.0] - 2026-02-04
+
+### Changed
+- **Single provider mode** - Radio buttons replace star/compare system; one active AI provider at a time
+- **Single best move** - Shows only the best move (depth 18) instead of 3-5 moves with configurable depth
+- **Auto-crop** - Automatically detects and crops the chess board from screenshots (two-pass Vision approach) replacing the manual crop modal
+- **Hardcoded orientation** - Always assumes white on bottom; removed board orientation setting
+- **Always infer castling** - Castling rights always inferred from king/rook positions; removed setting toggle
+
+### Removed
+- Multi-provider comparison mode and diagnostic table
+- AI-generated explanation feature (saves an API call per analysis)
+- Number of moves setting (was 3/4/5)
+- Analysis depth setting (was 12/15/18)
+- Board orientation setting
+- Castling inference setting
+- Manual crop modal
+- Evaluation scores on moves
+
+## [2.10.4] - 2026-01-26
+
+### Fixed
+- **Invalid FEN fallback** - If the default Vision provider returns an invalid FEN (e.g., 9 pawns), the analysis now falls back to a valid provider instead of failing Stockfish.
+  - Validates/normalizes all provider FENs before Stockfish
+  - Keeps comparison table aligned with the provider actually used
+- **Model agreement diagnostics** - Pawn counts now populate in the comparison table, and error rows show a tooltip with the invalid FEN reason.
+- **Vision retry on invalid FEN** - If all providers return invalid FENs, the system retries once with a stricter validation prompt before failing.
+
+### Changed
+- **Provider comparison limit** - Can now select 1 or 2 providers for comparison (was unlimited)
+  - Unchecked providers are disabled when 2 are already selected
+  - Added hint text in settings explaining the limit
+
 ## [2.10.2] - 2026-01-26
 
 ### Fixed
 - **Stockfish FEN validation error** - Vision API sometimes returns FEN with only piece placement (missing turn, castling, etc.)
   - Now normalizes FEN before validation to add missing fields with defaults
   - Uses turn from Vision response when FEN only has piece placement
-
-### Changed
-- **Provider comparison limit** - Can now select 1 or 2 providers for comparison (was unlimited)
-  - Unchecked providers are disabled when 2 are already selected
-  - Added hint text in settings explaining the limit
 
 ## [2.10.1] - 2026-01-27
 

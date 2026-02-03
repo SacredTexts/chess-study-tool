@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Chrome extension (Manifest V3) that analyzes chess positions from screenshots using AI vision and Stockfish engine. Designed as a **standalone learning tool** with zero website interaction - no content scripts, no DOM manipulation, no chess site permissions.
+Chrome extension (Manifest V3) that analyzes chess positions using Stockfish. On chess.com, reads positions directly from the DOM (100% accurate). On other sites, falls back to AI vision (screenshot → FEN). Content script on chess.com enables middle-click capture.
 
 ## Development Commands
 
@@ -40,11 +40,17 @@ Extension Icon → Side Panel (panel.html/panel.js)
 ### Analysis Pipeline
 
 ```
-1. User clicks "Capture" → chrome.tabs.captureVisibleTab()
-2. Screenshot → Claude Vision API → FEN notation
-3. FEN → Chess-API.com (Stockfish) → Best moves
-4. Position + Moves → Claude API → Educational explanation
-5. Results displayed in panel with interactive board
+Chess.com (primary):
+1. User clicks Capture (or middle-click) → chrome.scripting.executeScript
+2. DOM extraction → FEN (100% accurate)
+3. FEN → Stockfish → Best moves
+4. Results displayed in panel
+
+Other sites (fallback):
+1. User clicks Capture → chrome.tabs.captureVisibleTab()
+2. Screenshot → Vision API (OpenRouter/Anthropic) → FEN
+3. FEN → Stockfish → Best moves
+4. Results displayed in panel
 ```
 
 ### Message Flow
@@ -78,10 +84,20 @@ Panel sends messages to service worker:
 
 ## Design Principles
 
-1. **Zero website interaction** - Only captures screenshots, never injects scripts or reads DOM
-2. **User-initiated only** - Captures only when user clicks button
-3. **Minimal permissions** - `storage`, `activeTab`, `tabs`, `sidePanel`
+1. **DOM-first on chess.com** - Reads positions from the page DOM for perfect accuracy; vision API is fallback only
+2. **User-initiated only** - Captures only when user clicks button or middle-clicks
+3. **Minimal permissions** - `storage`, `activeTab`, `tabs`, `sidePanel`, `scripting`
 4. **No tracking** - Settings in chrome.storage.sync, no analytics
+
+## Versioning (update at end of every session)
+
+When bumping the version, update all 3 locations and the changelog:
+
+1. `manifest.json` → `"version"` field
+2. `src/panel/panel.html` → header badge and settings footer (search for the version string)
+3. `src/panel/panel.js` → comment at top of file
+
+Also add an entry to `CHANGELOG.md` describing what changed.
 
 ## Code Conventions
 

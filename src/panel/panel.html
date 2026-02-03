@@ -10,7 +10,7 @@
       margin: 0;
       padding: 0;
     }
-    
+
     body {
       width: 100%;
       height: 100vh;
@@ -22,7 +22,7 @@
       flex-direction: column;
       overflow: hidden;
     }
-    
+
     /* ============ HEADER ============ */
     .header {
       padding: 16px 20px;
@@ -32,19 +32,19 @@
       align-items: center;
       justify-content: space-between;
     }
-    
+
     .header-title {
       display: flex;
       align-items: center;
       gap: 10px;
     }
-    
+
     .header-title h1 {
       font-size: 16px;
       font-weight: 600;
       color: #fff;
     }
-    
+
     .header-title .icon {
       font-size: 20px;
     }
@@ -63,52 +63,18 @@
       align-items: center;
       gap: 12px;
     }
-    
-    .header-indicators {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      padding: 4px 8px;
+
+    .header-shortcut {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 10px;
+      color: #888;
       background: rgba(0, 0, 0, 0.3);
-      border-radius: 12px;
-      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
     }
-    
-    .header-indicators:hover {
-      background: rgba(0, 0, 0, 0.5);
-    }
-    
-    .header-dot {
-      width: 10px;
-      height: 10px;
-    }
-    
-    .header-dot circle {
-      transition: fill 0.3s;
-    }
-    
-    .header-dot.connected circle {
-      fill: #2ecc71;
-    }
-    
-    .header-dot.disconnected circle {
-      fill: #e74c3c;
-    }
-    
-    .header-dot.checking circle {
-      fill: #f39c12;
-      animation: pulse-dot 1s infinite;
-    }
-    
-    .header-dot.has-errors circle {
-      fill: #ff69b4;
-    }
-    
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-    
+
     .header-badge {
       font-size: 10px;
       background: rgba(46, 204, 113, 0.2);
@@ -117,7 +83,7 @@
       border-radius: 4px;
       font-weight: 600;
     }
-    
+
     .settings-btn {
       background: rgba(255, 255, 255, 0.1);
       border: none;
@@ -129,16 +95,16 @@
       font-size: 16px;
       transition: all 0.2s;
     }
-    
+
     .settings-btn:hover {
       background: rgba(255, 255, 255, 0.2);
     }
-    
+
     .header-buttons {
       display: flex;
       gap: 8px;
     }
-    
+
     .close-btn {
       background: rgba(255, 255, 255, 0.1);
       border: none;
@@ -150,92 +116,73 @@
       font-size: 16px;
       transition: all 0.2s;
     }
-    
+
     .close-btn:hover {
       background: rgba(231, 76, 60, 0.6);
     }
-    
+
     /* ============ MAIN CONTENT ============ */
     .main-content {
       flex: 1;
       overflow-y: auto;
       padding: 20px;
     }
-    
-    /* ============ CAPTURE SECTION ============ */
-    .capture-section {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    
-    .capture-btn {
-      width: 100%;
-      padding: 16px 24px;
+
+    /* ============ HEADER CAPTURE BUTTON ============ */
+    .header-capture-btn {
+      padding: 6px 14px;
       background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
       border: none;
-      border-radius: 12px;
+      border-radius: 8px;
       color: #fff;
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
+      gap: 6px;
       transition: all 0.2s;
+      white-space: nowrap;
     }
-    
-    .capture-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+
+    .header-capture-btn:hover {
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
     }
-    
-    .capture-btn:disabled {
+
+    .header-capture-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
-      transform: none;
     }
-    
-    .capture-btn .spinner {
+
+    .header-capture-btn .spinner {
       display: none;
-      width: 18px;
-      height: 18px;
+      width: 14px;
+      height: 14px;
       border: 2px solid rgba(255,255,255,0.3);
       border-top-color: #fff;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-    
-    .capture-btn.loading .spinner {
+
+    .header-capture-btn.loading .spinner {
       display: block;
     }
-    
-    .capture-btn.loading .btn-text {
+
+    .header-capture-btn.loading .btn-text {
       display: none;
     }
-    
+
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    
-    .capture-hint {
-      font-size: 12px;
-      color: #666;
-      margin-top: 10px;
-    }
-    
-    /* I am White/Black toggle below capture button */
-    .side-toggle-container {
+
+    /* Header side toggle (compact) */
+    .header-side-toggle {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 14px;
-      padding: 10px 16px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
+      gap: 6px;
     }
-    
+
     /* ============ STATUS ============ */
     .status-bar {
       display: flex;
@@ -246,12 +193,12 @@
       border-radius: 8px;
       margin-bottom: 16px;
     }
-    
+
     /* ============ THUMBNAIL ============ */
     .thumbnail-section {
       text-align: center;
     }
-    
+
     .thumbnail-container {
       background: rgba(0, 0, 0, 0.3);
       border-radius: 8px;
@@ -262,43 +209,43 @@
       overflow: hidden;
       border: 2px solid rgba(52, 152, 219, 0.3);
     }
-    
+
     .thumbnail-container img {
       max-width: 100%;
       max-height: 200px;
       border-radius: 4px;
       object-fit: contain;
     }
-    
+
     .thumbnail-hint {
       font-size: 11px;
       color: #666;
       margin-top: 8px;
       font-style: italic;
     }
-    
+
     .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: #666;
     }
-    
+
     .status-dot.loading { background: #3498db; animation: pulse 1.5s infinite; }
     .status-dot.success { background: #2ecc71; }
     .status-dot.error { background: #e74c3c; }
-    
+
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
     }
-    
+
     .status-text {
       flex: 1;
       font-size: 13px;
       color: #888;
     }
-    
+
     /* ============ POSITION INFO ============ */
     .section {
       background: rgba(255, 255, 255, 0.03);
@@ -307,7 +254,7 @@
       margin-bottom: 14px;
       border: 1px solid rgba(255, 255, 255, 0.05);
     }
-    
+
     .section-title {
       font-size: 11px;
       font-weight: 600;
@@ -316,7 +263,7 @@
       color: #666;
       margin-bottom: 10px;
     }
-    
+
     .fen-display {
       font-family: 'Courier New', monospace;
       font-size: 11px;
@@ -326,141 +273,102 @@
       word-break: break-all;
       color: #aaa;
     }
-    
-    .turn-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 8px;
-      font-size: 13px;
-    }
-    
-    .turn-info .turn-white { color: #fff; }
-    .turn-info .turn-black { color: #888; }
-    
-    /* ============ MOVES ============ */
+
+
+    /* ============ BEST MOVE ============ */
     .moves-list {
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
-    
-    .move-row {
+
+    .best-move-container {
+      padding: 10px 12px;
+      background: linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(46, 204, 113, 0.05) 100%);
+      border: 2px solid rgba(46, 204, 113, 0.4);
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .best-move-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #2ecc71;
+      margin-bottom: 6px;
+    }
+
+    .best-move-content {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 12px 14px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: 1px solid transparent;
+      justify-content: center;
+      gap: 8px;
     }
-    
-    .move-row:hover {
-      background: rgba(255, 255, 255, 0.08);
-    }
-    
-    .move-row.best {
-      background: rgba(46, 204, 113, 0.15);
-      border: 1px solid rgba(46, 204, 113, 0.3);
-    }
-    
-    .move-row.active {
-      background: rgba(52, 152, 219, 0.15);
-      border: 1px solid rgba(52, 152, 219, 0.4);
-    }
-    
-    .move-row.best.active {
-      background: rgba(46, 204, 113, 0.2);
-      border: 1px solid rgba(46, 204, 113, 0.5);
-    }
-    
-    .move-rank {
-      font-size: 12px;
-      font-weight: 600;
-      color: #666;
-      min-width: 20px;
-    }
-    
-    .move-row.best .move-rank {
-      color: #2ecc71;
-    }
-    
-    .move-piece-icon {
-      font-size: 22px;
-      min-width: 26px;
-      text-align: center;
+
+    .best-move-piece {
+      font-size: 24px;
       line-height: 1;
     }
-    
-    .move-piece-icon.white-piece {
+
+    .best-move-piece.white-piece {
       color: #fff;
       text-shadow: 0 0 3px #000, 1px 1px 2px #000;
     }
-    
-    .move-piece-icon.black-piece {
+
+    .best-move-piece.black-piece {
       color: #333;
       text-shadow: 0 0 1px #fff;
     }
-    
-    .move-text {
-      flex: 1;
+
+    .best-move-notation {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    
-    .move-piece-name {
-      font-size: 14px;
-      font-weight: 500;
-      color: #aaa;
-    }
-    
-    .move-from-square {
-      font-size: 14px;
-      font-weight: 600;
-      color: #888;
-    }
-    
-    .move-arrow {
-      font-size: 12px;
-      color: #666;
-    }
-    
-    .move-to-square {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 600;
       color: #fff;
     }
-    
-    .move-eval {
-      font-size: 12px;
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 4px;
-      background: rgba(0, 0, 0, 0.3);
-      min-width: 55px;
-      text-align: center;
+
+    .best-move-from {
+      color: #888;
     }
-    
-    .move-eval.positive { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
-    .move-eval.negative { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
-    
+
+    .best-move-arrow {
+      font-size: 14px;
+      color: #2ecc71;
+    }
+
+    .best-move-to {
+      color: #fff;
+    }
+
+    .best-move-name {
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .engine-note {
+      font-size: 10px;
+      color: #888;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
     /* ============ MINI BOARD ============ */
     .mini-board-container {
       display: flex;
       justify-content: center;
       padding: 8px 0;
     }
-    
+
     .mini-board-wrapper {
       position: relative;
       width: 160px;
       height: 160px;
     }
-    
+
     .mini-board {
       display: grid;
       grid-template-columns: repeat(8, 1fr);
@@ -472,44 +380,44 @@
       overflow: hidden;
       font-size: 14px;
     }
-    
+
     .mini-square {
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
     }
-    
+
     .mini-square.light {
       background: #f0d9b5;
     }
-    
+
     .mini-square.dark {
       background: #b58863;
     }
-    
+
     .mini-square.from-square {
       background: rgba(255, 255, 100, 0.6) !important;
     }
-    
+
     .mini-square.to-square {
       background: rgba(100, 255, 100, 0.6) !important;
     }
-    
+
     .mini-square .mini-piece {
       font-size: 16px;
       user-select: none;
     }
-    
+
     .mini-square .mini-piece.white {
       color: #fff;
       text-shadow: 0 0 2px #000, 1px 1px 1px #000;
     }
-    
+
     .mini-square .mini-piece.black {
       color: #000;
     }
-    
+
     /* Arrow overlay */
     .move-arrow-svg {
       position: absolute;
@@ -519,7 +427,7 @@
       height: 100%;
       pointer-events: none;
     }
-    
+
     .move-arrow {
       fill: none;
       stroke: rgba(0, 150, 0, 0.85);
@@ -527,14 +435,14 @@
       stroke-linecap: round;
       marker-end: url(#arrowhead);
     }
-    
+
     .placeholder {
       text-align: center;
       color: #555;
       padding: 20px;
       font-style: italic;
     }
-    
+
     /* ============ CHESS BOARD ============ */
     .chess-board-container {
       display: flex;
@@ -542,7 +450,7 @@
       align-items: center;
       gap: 8px;
     }
-    
+
     .chess-board {
       display: grid;
       grid-template-columns: repeat(8, 1fr);
@@ -554,7 +462,7 @@
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
-    
+
     .chess-square {
       display: flex;
       align-items: center;
@@ -563,33 +471,33 @@
       cursor: default;
       position: relative;
     }
-    
+
     .chess-square.light {
       background: #f0d9b5;
     }
-    
+
     .chess-square.dark {
       background: #b58863;
     }
-    
+
     .chess-square.highlight {
       box-shadow: inset 0 0 0 3px #ffeb3b;
     }
-    
+
     .chess-square .piece {
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
       user-select: none;
     }
-    
+
     .chess-square .piece.white {
       color: #fff;
       text-shadow: 0 0 3px #000, 1px 1px 2px #000;
     }
-    
+
     .chess-square .piece.black {
       color: #000;
     }
-    
+
     .board-labels {
       display: flex;
       justify-content: space-around;
@@ -598,11 +506,11 @@
       color: #888;
       padding: 0 4px;
     }
-    
+
     .board-labels.files {
       margin-top: 4px;
     }
-    
+
     .board-ranks {
       display: flex;
       flex-direction: column;
@@ -612,23 +520,23 @@
       color: #888;
       padding: 4px 0;
     }
-    
+
     .board-wrapper {
       display: flex;
       align-items: center;
       gap: 4px;
     }
-    
+
     /* Best move highlight */
     .chess-square.best-from {
       box-shadow: inset 0 0 0 3px #4CAF50;
     }
-    
+
     .chess-square.best-to {
       box-shadow: inset 0 0 0 3px #4CAF50;
       background: rgba(76, 175, 80, 0.3);
     }
-    
+
     .chess-square.best-to::after {
       content: '';
       position: absolute;
@@ -638,39 +546,39 @@
       border-radius: 50%;
       opacity: 0.6;
     }
-    
+
     /* Side toggle switch */
     .side-toggle {
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    
+
     .side-label-prefix {
       font-size: 11px;
       color: #888;
       font-weight: 500;
     }
-    
+
     .side-label-color {
       font-size: 12px;
       color: #fff;
       font-weight: 600;
       min-width: 40px;
     }
-    
+
     .toggle-switch {
       position: relative;
       width: 36px;
       height: 20px;
     }
-    
+
     .toggle-switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
-    
+
     .toggle-slider {
       position: absolute;
       cursor: pointer;
@@ -682,7 +590,7 @@
       border-radius: 20px;
       transition: 0.3s;
     }
-    
+
     .toggle-slider:before {
       position: absolute;
       content: "";
@@ -695,16 +603,16 @@
       transition: 0.3s;
       box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
-    
+
     .toggle-switch input:checked + .toggle-slider {
       background: linear-gradient(to right, #b58863, #3a3a3a);
     }
-    
+
     .toggle-switch input:checked + .toggle-slider:before {
       transform: translateX(16px);
       background: #333;
     }
-    
+
     .move-legend {
       display: flex;
       align-items: center;
@@ -713,50 +621,29 @@
       color: #888;
       margin-top: 8px;
     }
-    
+
     .legend-item {
       display: flex;
       align-items: center;
       gap: 4px;
     }
-    
+
     .legend-dot {
       width: 12px;
       height: 12px;
       border-radius: 2px;
     }
-    
+
     .legend-dot.from {
       border: 2px solid #4CAF50;
       background: transparent;
     }
-    
+
     .legend-dot.to {
       background: rgba(76, 175, 80, 0.5);
       border: 2px solid #4CAF50;
     }
-    
-    /* ============ EXPLANATION ============ */
-    .explanation-text {
-      font-size: 13px;
-      line-height: 1.6;
-      color: #ccc;
-    }
-    
-    .chess-term {
-      background: rgba(155, 89, 182, 0.2);
-      color: #9b59b6;
-      padding: 1px 5px;
-      border-radius: 3px;
-      font-weight: 500;
-    }
-    
-    .move-inline {
-      font-family: 'Courier New', monospace;
-      font-weight: 700;
-      color: #3498db;
-    }
-    
+
     /* ============ SETTINGS PANEL ============ */
     .settings-panel {
       display: none;
@@ -764,15 +651,15 @@
       overflow-y: auto;
       padding: 20px;
     }
-    
+
     .settings-panel.active {
       display: block;
     }
-    
+
     .main-content.hidden {
       display: none;
     }
-    
+
     .back-btn {
       background: rgba(255, 255, 255, 0.1);
       border: none;
@@ -786,15 +673,15 @@
       align-items: center;
       gap: 8px;
     }
-    
+
     .back-btn:hover {
       background: rgba(255, 255, 255, 0.2);
     }
-    
+
     .form-group {
       margin-bottom: 16px;
     }
-    
+
     .form-group label {
       display: block;
       font-size: 13px;
@@ -802,7 +689,7 @@
       margin-bottom: 8px;
       color: #ddd;
     }
-    
+
     .form-group input,
     .form-group select {
       width: 100%;
@@ -813,29 +700,29 @@
       color: #fff;
       font-size: 14px;
     }
-    
+
     .form-group input:focus,
     .form-group select:focus {
       outline: none;
       border-color: #3498db;
     }
-    
+
     .form-hint {
       font-size: 11px;
       color: #555;
       margin-top: 6px;
     }
-    
+
     /* ============ API KEY WRAPPER ============ */
     .api-key-wrapper {
       display: flex;
       gap: 8px;
     }
-    
+
     .api-key-wrapper input {
       flex: 1;
     }
-    
+
     .toggle-key-btn {
       width: 44px;
       background: rgba(255, 255, 255, 0.1);
@@ -848,29 +735,29 @@
       justify-content: center;
       transition: all 0.2s;
     }
-    
+
     .toggle-key-btn:hover {
       background: rgba(255, 255, 255, 0.15);
       color: #fff;
     }
-    
+
     .eye-icon {
       width: 18px;
       height: 18px;
     }
-    
+
     .toggle-key-btn .eye-closed {
       display: none;
     }
-    
+
     .toggle-key-btn.showing .eye-open {
       display: none;
     }
-    
+
     .toggle-key-btn.showing .eye-closed {
       display: block;
     }
-    
+
     .save-btn {
       width: 100%;
       padding: 12px;
@@ -883,12 +770,12 @@
       cursor: pointer;
       margin-top: 8px;
     }
-    
+
     .save-btn:hover {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
     }
-    
+
     /* ============ STATUS INDICATORS ============ */
     .status-indicators {
       display: flex;
@@ -896,7 +783,7 @@
       justify-content: center;
       margin-bottom: 12px;
     }
-    
+
     .status-indicator {
       display: flex;
       flex-direction: column;
@@ -907,47 +794,47 @@
       border-radius: 8px;
       transition: background 0.2s;
     }
-    
+
     .status-indicator:hover {
       background: rgba(255, 255, 255, 0.05);
     }
-    
+
     .status-svg {
       width: 16px;
       height: 16px;
     }
-    
+
     .status-svg circle {
       transition: fill 0.3s;
     }
-    
+
     .status-indicator.connected .status-svg circle {
       fill: #2ecc71;
     }
-    
+
     .status-indicator.disconnected .status-svg circle {
       fill: #e74c3c;
     }
-    
+
     .status-indicator.checking .status-svg circle {
       fill: #f39c12;
       animation: pulse-indicator 1s infinite;
     }
-    
+
     .status-indicator.has-errors .status-svg circle {
       fill: #ff69b4;
     }
-    
+
     @keyframes pulse-indicator {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
     }
-    
+
     .status-label {
       font-size: 11px;
       color: #888;
     }
-    
+
     .error-count {
       font-size: 10px;
       background: #ff69b4;
@@ -956,7 +843,7 @@
       border-radius: 8px;
       font-weight: 600;
     }
-    
+
     .check-btn {
       width: 100%;
       padding: 10px;
@@ -968,23 +855,23 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    
+
     .check-btn:hover {
       background: rgba(255, 255, 255, 0.15);
     }
-    
+
     .check-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-    
+
     .error-log {
       margin-top: 12px;
       background: rgba(0, 0, 0, 0.3);
       border-radius: 8px;
       overflow: hidden;
     }
-    
+
     .error-log-header {
       display: flex;
       justify-content: space-between;
@@ -995,7 +882,7 @@
       font-weight: 600;
       color: #ff69b4;
     }
-    
+
     .clear-errors-btn {
       background: transparent;
       border: 1px solid rgba(255, 105, 180, 0.5);
@@ -1005,11 +892,11 @@
       font-size: 10px;
       cursor: pointer;
     }
-    
+
     .clear-errors-btn:hover {
       background: rgba(255, 105, 180, 0.2);
     }
-    
+
     .error-log-content {
       max-height: 150px;
       overflow-y: auto;
@@ -1018,16 +905,16 @@
       font-size: 11px;
       color: #ccc;
     }
-    
+
     .error-entry {
       padding: 4px 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
-    
+
     .error-entry:last-child {
       border-bottom: none;
     }
-    
+
     .error-time {
       color: #666;
       margin-right: 8px;
@@ -1054,21 +941,6 @@
       color: #555;
     }
 
-    /* ============ NOTICE ============ */
-    .notice {
-      background: rgba(52, 152, 219, 0.1);
-      border: 1px solid rgba(52, 152, 219, 0.2);
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 12px;
-      line-height: 1.5;
-      color: #888;
-      margin-top: 16px;
-    }
-
-    .notice strong {
-      color: #3498db;
-    }
 
     /* ============ PROVIDER SECTION ============ */
     .provider-section {
@@ -1077,10 +949,6 @@
       padding: 14px;
       margin-bottom: 14px;
       border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .provider-section.is-default {
-      border-color: rgba(46, 204, 113, 0.4);
     }
 
     .provider-header {
@@ -1098,111 +966,37 @@
       color: #888;
     }
 
-    .provider-controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .provider-star {
-      background: none;
-      border: none;
-      font-size: 18px;
-      cursor: pointer;
-      color: #555;
-      padding: 4px;
-      transition: all 0.2s;
-      line-height: 1;
-    }
-
-    .provider-star:hover {
-      color: #f1c40f;
-    }
-
-    .provider-star.active {
-      color: #f1c40f;
-    }
-
-    .provider-star.disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    .provider-compare {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-    }
-
-    .provider-compare input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      cursor: pointer;
-      accent-color: #3498db;
-    }
-
-    .provider-compare-label {
-      font-size: 11px;
-      color: #666;
-    }
-
     .provider-content {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
-    /* ============ MODEL COMPARISON RESULTS ============ */
-    .comparison-box {
-      background: rgba(52, 152, 219, 0.1);
-      border: 1px solid rgba(52, 152, 219, 0.2);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 14px;
-    }
-
-    .comparison-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #3498db;
-      margin-bottom: 10px;
-    }
-
-    .comparison-item {
+    .provider-radio-label {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      cursor: pointer;
       padding: 4px 0;
-      font-size: 12px;
     }
 
-    .comparison-item.agree {
-      color: #2ecc71;
+    .provider-radio {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #3498db;
+      margin: 0;
     }
 
-    .comparison-item.disagree {
-      color: #f39c12;
+    .provider-radio:checked + .provider-title {
+      color: #3498db;
+      font-weight: 600;
     }
 
-    .comparison-icon {
-      font-size: 14px;
+    .provider-section.is-active {
+      border-color: rgba(52, 152, 219, 0.4);
     }
 
-    .comparison-default {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 11px;
-      color: #888;
-    }
-
-    .comparison-default .default-star {
-      color: #f1c40f;
-    }
-    
     /* ============ SCROLLBAR ============ */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
@@ -1213,48 +1007,28 @@
   <!-- HEADER -->
   <div class="header">
     <div class="header-title">
-      <span class="icon">♟️</span>
-      <h1>Chess Study Tool</h1>
-      <span class="version-badge">v2.10.2</span>
-    </div>
-    <div class="header-right">
-      <div class="header-indicators" title="API Status">
-        <svg class="header-dot" id="header-anthropic-dot" viewBox="0 0 10 10">
-          <circle cx="5" cy="5" r="4" fill="#666"/>
-        </svg>
-        <svg class="header-dot" id="header-stockfish-dot" viewBox="0 0 10 10">
-          <circle cx="5" cy="5" r="4" fill="#666"/>
-        </svg>
-        <svg class="header-dot" id="header-error-dot" viewBox="0 0 10 10">
-          <circle cx="5" cy="5" r="4" fill="#666"/>
-        </svg>
-      </div>
-      <button class="settings-btn" id="settings-toggle" title="Settings">⚙️</button>
-      <button class="close-btn" id="close-btn" title="Close Window">✕</button>
-    </div>
-  </div>
-  
-  <!-- MAIN CONTENT -->
-  <div class="main-content" id="main-content">
-    <!-- Capture Button -->
-    <div class="capture-section">
-      <button class="capture-btn" id="capture-btn">
-        <span class="btn-text">📸 Capture & Analyze Screen</span>
+      <button class="header-capture-btn" id="capture-btn">
+        <span class="btn-text">&#128248; Capture</span>
         <span class="spinner"></span>
       </button>
-      <p class="capture-hint">Position your chess board on screen, then click to analyze</p>
-      
-      <!-- I am White/Black toggle -->
-      <div class="side-toggle-container">
-        <span class="side-label-prefix">I am</span>
+      <span class="version-badge">v3.7.0</span>
+    </div>
+    <div class="header-right">
+      <div class="header-side-toggle">
         <label class="toggle-switch">
           <input type="checkbox" id="side-switch">
           <span class="toggle-slider"></span>
         </label>
         <span class="side-label-color" id="side-color-label">White</span>
       </div>
+      <kbd class="header-shortcut" title="Middle-click to capture" style="line-height: 1.1; text-align: center;">Mouse<br>Wheel</kbd>
+      <button class="settings-btn" id="settings-toggle" title="Settings">&#9881;&#65039;</button>
+      <button class="close-btn" id="close-btn" title="Close Window">&#10005;</button>
     </div>
-    
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content" id="main-content">
     <!-- Screenshot Thumbnail -->
     <div class="section thumbnail-section" id="thumbnail-section" style="display: none;">
       <div class="section-title">Captured Screenshot</div>
@@ -1263,38 +1037,27 @@
       </div>
       <p class="thumbnail-hint">Confirm this shows your chess board</p>
     </div>
-    
+
     <!-- Status -->
     <div class="status-bar">
       <span class="status-dot" id="status-dot"></span>
       <span class="status-text" id="status-text">Ready - click capture to analyze a position</span>
     </div>
-    
+
     <!-- Position Info -->
     <div class="section" id="position-section" style="display: none;">
       <div class="section-title">Position</div>
       <div class="fen-display" id="fen-display">-</div>
-      <div class="turn-info">
-        <span>To move:</span>
-        <span id="turn-display">-</span>
-      </div>
     </div>
 
-    <!-- Model Comparison Results -->
-    <div class="comparison-box" id="comparison-box" style="display: none;">
-      <div class="comparison-title">Model Agreement</div>
-      <div id="comparison-results"></div>
-      <div class="comparison-default" id="comparison-default"></div>
-    </div>
-    
-    <!-- Best Moves -->
+    <!-- Best Move -->
     <div class="section" id="moves-section" style="display: none;">
-      <div class="section-title">Best Moves</div>
+      <div class="section-title">Best Move</div>
       <div class="moves-list" id="moves-list">
         <div class="placeholder">Capture a position to see analysis</div>
       </div>
     </div>
-    
+
     <!-- Chess Board Visualization -->
     <div class="section" id="board-section" style="display: none;">
       <div class="section-title">Board Position</div>
@@ -1322,41 +1085,20 @@
         </div>
       </div>
     </div>
-    
-    <!-- Explanation -->
-    <div class="section" id="explanation-section" style="display: none;">
-      <div class="section-title">Analysis</div>
-      <div class="explanation-text" id="explanation-text">
-        <div class="placeholder">AI explanation will appear here</div>
-      </div>
-    </div>
-    
-    <!-- Notice -->
-    <div class="notice">
-      <strong>📚 Learning Tool:</strong> This extension does NOT interact with any chess website. 
-      It simply captures your screen and analyzes the position for study purposes.
-    </div>
+
   </div>
-  
+
   <!-- SETTINGS PANEL -->
   <div class="settings-panel" id="settings-panel">
-    <button class="back-btn" id="back-btn">← Back to Analysis</button>
-
-    <p class="form-hint" style="margin-bottom: 14px; text-align: center;">
-      ★ = Default provider for analysis &nbsp;|&nbsp; Compare up to 2 providers
-    </p>
+    <button class="back-btn" id="back-btn">&#8592; Back to Analysis</button>
 
     <!-- ANTHROPIC PROVIDER -->
     <div class="provider-section" id="anthropic-section" data-provider="anthropic">
       <div class="provider-header">
-        <span class="provider-title">Anthropic (Direct)</span>
-        <div class="provider-controls">
-          <button class="provider-star active" id="anthropic-star" title="Set as default">★</button>
-          <label class="provider-compare">
-            <input type="checkbox" id="anthropic-compare" checked>
-            <span class="provider-compare-label">Compare</span>
-          </label>
-        </div>
+        <label class="provider-radio-label">
+          <input type="radio" name="active-provider" value="anthropic" id="anthropic-radio" class="provider-radio">
+          <span class="provider-title">Anthropic (Direct)</span>
+        </label>
       </div>
       <div class="provider-content">
         <div class="form-group">
@@ -1390,20 +1132,18 @@
     <!-- OPENROUTER PROVIDER -->
     <div class="provider-section" id="openrouter-section" data-provider="openrouter">
       <div class="provider-header">
-        <span class="provider-title">OpenRouter</span>
-        <div class="provider-controls">
-          <button class="provider-star" id="openrouter-star" title="Set as default">☆</button>
-          <label class="provider-compare">
-            <input type="checkbox" id="openrouter-compare">
-            <span class="provider-compare-label">Compare</span>
-          </label>
-        </div>
+        <label class="provider-radio-label">
+          <input type="radio" name="active-provider" value="openrouter" id="openrouter-radio" class="provider-radio">
+          <span class="provider-title">OpenRouter</span>
+        </label>
       </div>
       <div class="provider-content">
         <div class="form-group">
           <label for="openrouter-model">Model</label>
           <select id="openrouter-model">
+            <option value="google/gemini-3-pro-preview">Gemini 3 Pro Preview</option>
             <option value="google/gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+            <option value="anthropic/claude-opus-4.5">Claude Opus 4.5</option>
           </select>
         </div>
         <div class="form-group">
@@ -1429,14 +1169,10 @@
     <!-- BIGMODEL (ZHIPU AI) PROVIDER -->
     <div class="provider-section" id="bigmodel-section" data-provider="bigmodel">
       <div class="provider-header">
-        <span class="provider-title">BigModel (Zhipu AI)</span>
-        <div class="provider-controls">
-          <button class="provider-star" id="bigmodel-star" title="Set as default">☆</button>
-          <label class="provider-compare">
-            <input type="checkbox" id="bigmodel-compare">
-            <span class="provider-compare-label">Compare</span>
-          </label>
-        </div>
+        <label class="provider-radio-label">
+          <input type="radio" name="active-provider" value="bigmodel" id="bigmodel-radio" class="provider-radio">
+          <span class="provider-title">BigModel (Zhipu AI)</span>
+        </label>
       </div>
       <div class="provider-content">
         <div class="form-group">
@@ -1465,37 +1201,23 @@
         </div>
       </div>
     </div>
-    
-    <div class="section">
-      <div class="section-title">Analysis Settings</div>
+
+    <!-- PLAY STYLE (Elo Selection) -->
+    <div class="section" style="margin-top: 16px;">
+      <div class="section-title">Play Style</div>
       <div class="form-group">
-        <label for="num-moves">Number of Moves</label>
-        <select id="num-moves">
-          <option value="3">3 moves</option>
-          <option value="4">4 moves</option>
-          <option value="5" selected>5 moves</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="depth">Analysis Depth</label>
-        <select id="depth">
-          <option value="12">12 - Fast</option>
-          <option value="15">15 - Balanced</option>
-          <option value="18" selected>18 - Deep</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="board-orientation">Board Orientation</label>
-        <select id="board-orientation">
-          <option value="white">White on bottom ⬜</option>
-          <option value="black">Black on bottom ⬛</option>
-        </select>
-        <p class="form-hint">Choose your playing side</p>
+        <label for="target-elo">Target Elo: <span id="elo-value" style="font-weight: 600; color: #3498db;">1500</span></label>
+        <input type="range" id="target-elo" min="800" max="2400" step="100" value="1500"
+               style="width: 100%; accent-color: #3498db; margin-top: 6px;">
+        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 2px;">
+          <span>800</span><span>1200</span><span>1600</span><span>2000</span><span>2400</span>
+        </div>
+        <p class="form-hint">Lower = more varied moves. Higher = closer to engine best.</p>
       </div>
     </div>
-    
-    <button class="save-btn" id="save-btn">💾 Save Settings</button>
-    
+
+    <button class="save-btn" id="save-btn">&#128190; Save Settings</button>
+
     <div class="section" style="margin-top: 16px;">
       <div class="section-title">API Status</div>
       <div class="status-indicators">
@@ -1547,7 +1269,7 @@
 
     <!-- Version Footer -->
     <div class="settings-footer">
-      <span class="settings-version">Chess Study Tool v2.10.2</span>
+      <span class="settings-version">Chess Study Tool v3.7.0</span>
       <span class="settings-credits">Powered by Claude Vision & Lichess</span>
     </div>
   </div>

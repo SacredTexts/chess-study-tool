@@ -1,12 +1,12 @@
 /**
- * Chess Study Tool - Panel Script
- * 
+ * Chess Study Tool - Panel Script (v3.7)
+ *
  * Standalone learning tool that:
  * 1. Captures screenshots on user request
  * 2. Sends to Claude Vision for position recognition
  * 3. Gets Stockfish analysis
  * 4. Displays results with visual boards
- * 
+ *
  * NO INTERACTION with any chess website - purely a study tool
  */
 
@@ -19,14 +19,18 @@ const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
 const fenDisplay = document.getElementById('fen-display');
 const turnDisplay = document.getElementById('turn-display');
+const fenInput = document.getElementById('fen-input');
+const fenToggleTurnBtn = document.getElementById('fen-toggle-turn');
+const fenRotate180Btn = document.getElementById('fen-rotate-180');
+const fenMirrorFilesBtn = document.getElementById('fen-mirror-files');
+const fenSwapColorsBtn = document.getElementById('fen-swap-colors');
+const fenRerunBtn = document.getElementById('fen-rerun');
 const movesList = document.getElementById('moves-list');
 const chessBoard = document.getElementById('chess-board');
-const explanationText = document.getElementById('explanation-text');
 
 const positionSection = document.getElementById('position-section');
 const movesSection = document.getElementById('moves-section');
 const boardSection = document.getElementById('board-section');
-const explanationSection = document.getElementById('explanation-section');
 const thumbnailSection = document.getElementById('thumbnail-section');
 const thumbnailImg = document.getElementById('thumbnail-img');
 
@@ -38,30 +42,19 @@ const saveBtn = document.getElementById('save-btn');
 
 // Provider section elements
 const anthropicSection = document.getElementById('anthropic-section');
-const anthropicStar = document.getElementById('anthropic-star');
-const anthropicCompare = document.getElementById('anthropic-compare');
 const anthropicModel = document.getElementById('anthropic-model');
 const anthropicKey = document.getElementById('anthropic-key');
+const anthropicRadio = document.getElementById('anthropic-radio');
 
 const openrouterSection = document.getElementById('openrouter-section');
-const openrouterStar = document.getElementById('openrouter-star');
-const openrouterCompare = document.getElementById('openrouter-compare');
 const openrouterModel = document.getElementById('openrouter-model');
 const openrouterKey = document.getElementById('openrouter-key');
+const openrouterRadio = document.getElementById('openrouter-radio');
 
 const bigmodelSection = document.getElementById('bigmodel-section');
-const bigmodelStar = document.getElementById('bigmodel-star');
-const bigmodelCompare = document.getElementById('bigmodel-compare');
 const bigmodelModel = document.getElementById('bigmodel-model');
 const bigmodelKey = document.getElementById('bigmodel-key');
-
-// Comparison box
-const comparisonBox = document.getElementById('comparison-box');
-const comparisonResults = document.getElementById('comparison-results');
-const comparisonDefault = document.getElementById('comparison-default');
-
-const numMovesSelect = document.getElementById('num-moves');
-const depthSelect = document.getElementById('depth');
+const bigmodelRadio = document.getElementById('bigmodel-radio');
 
 const closeBtn = document.getElementById('close-btn');
 
@@ -87,6 +80,10 @@ const clearDebugLogsBtn = document.getElementById('clear-debug-logs-btn');
 const debugLogViewer = document.getElementById('debug-log-viewer');
 const debugLogContent = document.getElementById('debug-log-content');
 
+// Elo slider
+const targetEloSlider = document.getElementById('target-elo');
+const eloValueDisplay = document.getElementById('elo-value');
+
 // Error tracking
 const errors = [];
 
@@ -108,30 +105,30 @@ const headerIndicators = document.querySelector('.header-indicators');
 document.addEventListener('DOMContentLoaded', async () => {
   // Load saved settings
   await loadSettings();
-  
+
   // Setup event listeners
   captureBtn.addEventListener('click', handleCapture);
   settingsToggle.addEventListener('click', showSettings);
   backBtn.addEventListener('click', hideSettings);
   saveBtn.addEventListener('click', saveSettings);
-  
+
   // Close button - close the window
   closeBtn.addEventListener('click', () => {
     window.close();
   });
-  
+
   // API check button
   checkApisBtn.addEventListener('click', checkAllAPIs);
-  
-  // Header indicators click - go to settings
-  headerIndicators.addEventListener('click', showSettings);
-  
+
+  // Header indicators click - go to settings (removed in v3.3, guarded)
+  if (headerIndicators) headerIndicators.addEventListener('click', showSettings);
+
   // Error indicator click - toggle error log
   errorIndicator.addEventListener('click', toggleErrorLog);
-  
+
   // Clear errors button
   clearErrorsBtn.addEventListener('click', clearErrors);
-  
+
   // Toggle API key visibility - all provider key buttons
   document.querySelectorAll('.toggle-key-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -145,18 +142,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Provider star buttons - set default
-  anthropicStar.addEventListener('click', () => setDefaultProvider('anthropic'));
-  openrouterStar.addEventListener('click', () => setDefaultProvider('openrouter'));
-  bigmodelStar.addEventListener('click', () => setDefaultProvider('bigmodel'));
-  
+  // Radio button provider selection
+  anthropicRadio.addEventListener('change', () => handleProviderChange('anthropic'));
+  openrouterRadio.addEventListener('change', () => handleProviderChange('openrouter'));
+  bigmodelRadio.addEventListener('change', () => handleProviderChange('bigmodel'));
+
   // Side toggle switch - "I am White" / "I am Black"
-  sideSwitch.addEventListener('change', () => {
+  sideSwitch.addEventListener('change', async () => {
     boardFlipped = sideSwitch.checked;
     sideColorLabel.textContent = boardFlipped ? 'Black' : 'White';
     updateBoardOrientation();
     if (currentFen && currentMoves) {
       renderChessBoard(currentFen, currentMoves[0]);
+    }
+    try {
+      await chrome.storage.sync.set({ boardFlipped });
+    } catch (e) {
+      console.warn('[Chess Study] Failed to save board flip state:', e);
     }
   });
 
@@ -165,10 +167,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   downloadDebugLogsBtn.addEventListener('click', downloadDebugLogs);
   clearDebugLogsBtn.addEventListener('click', clearDebugLogs);
 
-  // Compare checkbox handlers - limit to max 2 providers
-  anthropicCompare.addEventListener('change', () => enforceCompareLimit('anthropic'));
-  openrouterCompare.addEventListener('change', () => enforceCompareLimit('openrouter'));
-  bigmodelCompare.addEventListener('change', () => enforceCompareLimit('bigmodel'));
+  // FEN tools (manual correction + rerun) - guarded, elements may be removed from UI
+  if (fenToggleTurnBtn) fenToggleTurnBtn.addEventListener('click', () => applyFenTransform('toggleTurn'));
+  if (fenRotate180Btn) fenRotate180Btn.addEventListener('click', () => applyFenTransform('rotate180'));
+  if (fenMirrorFilesBtn) fenMirrorFilesBtn.addEventListener('click', () => applyFenTransform('mirrorFiles'));
+  if (fenSwapColorsBtn) fenSwapColorsBtn.addEventListener('click', () => applyFenTransform('swapColors'));
+  if (fenRerunBtn) fenRerunBtn.addEventListener('click', rerunFromFen);
+
+  // Elo slider live update
+  targetEloSlider.addEventListener('input', () => {
+    eloValueDisplay.textContent = targetEloSlider.value;
+  });
+
+  // Listen for keyboard shortcut (Alt+=) from service worker
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'TRIGGER_CAPTURE') {
+      handleCapture();
+    }
+  });
 });
 
 // Update board labels based on orientation
@@ -182,56 +198,33 @@ function updateBoardOrientation() {
   }
 }
 
-// Maximum providers that can be selected for comparison
-const MAX_COMPARE_PROVIDERS = 2;
-
-// Enforce limit of 2 providers for comparison
-function enforceCompareLimit(changedProvider) {
-  const checkboxes = {
-    anthropic: anthropicCompare,
-    openrouter: openrouterCompare,
-    bigmodel: bigmodelCompare
+function handleProviderChange(provider) {
+  const keyMap = {
+    anthropic: anthropicKey.value.trim(),
+    openrouter: openrouterKey.value.trim(),
+    bigmodel: bigmodelKey.value.trim()
   };
 
-  const checkedProviders = [];
-  for (const [provider, checkbox] of Object.entries(checkboxes)) {
-    if (checkbox.checked) {
-      checkedProviders.push(provider);
-    }
+  if (!keyMap[provider]) {
+    // Revert to previously selected provider
+    const settings = chrome.storage.sync.get({ defaultProvider: 'anthropic' });
+    settings.then(s => {
+      const radio = document.querySelector(`input[name="active-provider"][value="${s.defaultProvider}"]`);
+      if (radio) radio.checked = true;
+    });
+    updateStatus('Please add an API key for that provider first.', 'error');
+    return;
   }
 
-  // If more than 2 are checked, uncheck the oldest one (not the one just changed)
-  if (checkedProviders.length > MAX_COMPARE_PROVIDERS) {
-    // Uncheck the first one that isn't the one just changed
-    for (const provider of checkedProviders) {
-      if (provider !== changedProvider) {
-        checkboxes[provider].checked = false;
-        break;
-      }
-    }
-  }
-
-  // Update disabled state - disable unchecked boxes when at limit
-  updateCompareCheckboxStates();
+  updateProviderSectionHighlight(provider);
 }
 
-// Update disabled state of compare checkboxes based on selection count
-function updateCompareCheckboxStates() {
-  const checkboxes = [anthropicCompare, openrouterCompare, bigmodelCompare];
-  const checkedCount = checkboxes.filter(cb => cb.checked).length;
-
-  // Disable unchecked boxes when at the limit
-  checkboxes.forEach(cb => {
-    if (!cb.checked && checkedCount >= MAX_COMPARE_PROVIDERS) {
-      cb.disabled = true;
-      cb.parentElement.style.opacity = '0.5';
-      cb.parentElement.title = `Max ${MAX_COMPARE_PROVIDERS} providers can be compared`;
-    } else {
-      cb.disabled = false;
-      cb.parentElement.style.opacity = '1';
-      cb.parentElement.title = '';
-    }
+function updateProviderSectionHighlight(activeProvider) {
+  document.querySelectorAll('.provider-section').forEach(section => {
+    section.classList.remove('is-active');
   });
+  const activeSection = document.getElementById(`${activeProvider}-section`);
+  if (activeSection) activeSection.classList.add('is-active');
 }
 
 // ============================================================================
@@ -240,19 +233,16 @@ function updateCompareCheckboxStates() {
 
 async function loadSettings() {
   const settings = await chrome.storage.sync.get({
-    // Per-provider settings
     anthropicApiKey: '',
     anthropicModel: 'claude-opus-4-5-20251101',
     openrouterApiKey: '',
     openrouterModel: 'google/gemini-3-flash-preview',
     bigmodelApiKey: '',
     bigmodelModel: 'glm-4v',
-    // Global settings
     defaultProvider: 'anthropic',
-    compareProviders: ['anthropic'],
-    numMoves: 5,
-    depth: 18,
-    // Migration: check old format
+    boardFlipped: false,
+    targetElo: 1500,
+    // Migration support
     claudeApiKey: '',
     apiProvider: 'anthropic'
   });
@@ -274,52 +264,20 @@ async function loadSettings() {
   bigmodelKey.value = settings.bigmodelApiKey;
   bigmodelModel.value = settings.bigmodelModel;
 
-  // Load analysis settings
-  numMovesSelect.value = settings.numMoves.toString();
-  depthSelect.value = settings.depth.toString();
+  // Set radio button for active provider
+  const radio = document.querySelector(`input[name="active-provider"][value="${settings.defaultProvider}"]`);
+  if (radio) radio.checked = true;
+  updateProviderSectionHighlight(settings.defaultProvider);
 
-  // Update default provider stars
-  updateDefaultProviderUI(settings.defaultProvider);
+  // Board flip state (display only)
+  boardFlipped = !!settings.boardFlipped;
+  sideSwitch.checked = boardFlipped;
+  sideColorLabel.textContent = boardFlipped ? 'Black' : 'White';
+  updateBoardOrientation();
 
-  // Update compare checkboxes (limit to MAX_COMPARE_PROVIDERS)
-  const compareList = settings.compareProviders.slice(0, MAX_COMPARE_PROVIDERS);
-  anthropicCompare.checked = compareList.includes('anthropic');
-  openrouterCompare.checked = compareList.includes('openrouter');
-  bigmodelCompare.checked = compareList.includes('bigmodel');
-
-  // Update disabled states based on selection count
-  updateCompareCheckboxStates();
-}
-
-function updateDefaultProviderUI(defaultProvider) {
-  // Update stars
-  anthropicStar.textContent = defaultProvider === 'anthropic' ? '★' : '☆';
-  anthropicStar.classList.toggle('active', defaultProvider === 'anthropic');
-  openrouterStar.textContent = defaultProvider === 'openrouter' ? '★' : '☆';
-  openrouterStar.classList.toggle('active', defaultProvider === 'openrouter');
-  bigmodelStar.textContent = defaultProvider === 'bigmodel' ? '★' : '☆';
-  bigmodelStar.classList.toggle('active', defaultProvider === 'bigmodel');
-
-  // Update section borders
-  anthropicSection.classList.toggle('is-default', defaultProvider === 'anthropic');
-  openrouterSection.classList.toggle('is-default', defaultProvider === 'openrouter');
-  bigmodelSection.classList.toggle('is-default', defaultProvider === 'bigmodel');
-}
-
-function setDefaultProvider(provider) {
-  // Check if provider has an API key
-  const keyMap = {
-    anthropic: anthropicKey.value.trim(),
-    openrouter: openrouterKey.value.trim(),
-    bigmodel: bigmodelKey.value.trim()
-  };
-
-  if (!keyMap[provider]) {
-    alert(`Please add an API key for ${provider} before setting it as default.`);
-    return;
-  }
-
-  updateDefaultProviderUI(provider);
+  // Elo slider
+  targetEloSlider.value = settings.targetElo;
+  eloValueDisplay.textContent = settings.targetElo;
 }
 
 async function saveSettings() {
@@ -337,31 +295,19 @@ async function saveSettings() {
     return;
   }
 
-  // Determine default provider (whichever star is active)
-  let defaultProvider = 'anthropic';
-  if (anthropicStar.classList.contains('active')) defaultProvider = 'anthropic';
-  else if (openrouterStar.classList.contains('active')) defaultProvider = 'openrouter';
-  else if (bigmodelStar.classList.contains('active')) defaultProvider = 'bigmodel';
+  // Get selected provider from radio buttons
+  const selectedRadio = document.querySelector('input[name="active-provider"]:checked');
+  let defaultProvider = selectedRadio?.value || 'anthropic';
 
-  // Get compare providers
-  const compareProviders = [];
-  if (anthropicCompare.checked) compareProviders.push('anthropic');
-  if (openrouterCompare.checked) compareProviders.push('openrouter');
-  if (bigmodelCompare.checked) compareProviders.push('bigmodel');
-
-  // If no providers selected for comparison, use default
-  if (compareProviders.length === 0) {
-    compareProviders.push(defaultProvider);
-  }
-
-  // Validate that default provider has an API key
+  // Validate that selected provider has an API key
   const keyMap = { anthropic: anthropicApiKey, openrouter: openrouterApiKey, bigmodel: bigmodelApiKey };
   if (!keyMap[defaultProvider]) {
-    // Auto-select first provider with a key as default
+    // Auto-select first provider with a key
     for (const provider of ['anthropic', 'openrouter', 'bigmodel']) {
       if (keyMap[provider]) {
         defaultProvider = provider;
-        updateDefaultProviderUI(provider);
+        const radio = document.querySelector(`input[name="active-provider"][value="${provider}"]`);
+        if (radio) radio.checked = true;
         break;
       }
     }
@@ -375,11 +321,11 @@ async function saveSettings() {
     bigmodelApiKey,
     bigmodelModel: bigmodelModel.value,
     defaultProvider,
-    compareProviders,
-    numMoves: parseInt(numMovesSelect.value),
-    depth: parseInt(depthSelect.value)
+    boardFlipped,
+    targetElo: parseInt(targetEloSlider.value)
   });
 
+  updateProviderSectionHighlight(defaultProvider);
   hideSettings();
   updateStatus('Settings saved!', 'success');
 }
@@ -402,27 +348,27 @@ function hideSettings() {
 async function checkAllAPIs() {
   checkApisBtn.disabled = true;
   checkApisBtn.textContent = 'Checking...';
-  
+
   // Set both to checking state
   anthropicIndicator.className = 'status-indicator checking';
   stockfishIndicator.className = 'status-indicator checking';
-  headerAnthropicDot.className = 'header-dot checking';
-  headerStockfishDot.className = 'header-dot checking';
-  
+  if (headerAnthropicDot) headerAnthropicDot.className = 'header-dot checking';
+  if (headerStockfishDot) headerStockfishDot.className = 'header-dot checking';
+
   // Check both APIs in parallel
   const [anthropicResult, stockfishResult] = await Promise.all([
     checkAnthropicAPI(),
     checkStockfishAPI()
   ]);
-  
+
   // Update indicators (settings panel)
   anthropicIndicator.className = `status-indicator ${anthropicResult.success ? 'connected' : 'disconnected'}`;
   stockfishIndicator.className = `status-indicator ${stockfishResult.success ? 'connected' : 'disconnected'}`;
-  
-  // Update header dots
-  headerAnthropicDot.className = `header-dot ${anthropicResult.success ? 'connected' : 'disconnected'}`;
-  headerStockfishDot.className = `header-dot ${stockfishResult.success ? 'connected' : 'disconnected'}`;
-  
+
+  // Update header dots (removed in v3.3, guarded)
+  if (headerAnthropicDot) headerAnthropicDot.className = `header-dot ${anthropicResult.success ? 'connected' : 'disconnected'}`;
+  if (headerStockfishDot) headerStockfishDot.className = `header-dot ${stockfishResult.success ? 'connected' : 'disconnected'}`;
+
   // Log errors
   if (!anthropicResult.success) {
     addError('Claude API', anthropicResult.error);
@@ -430,7 +376,7 @@ async function checkAllAPIs() {
   if (!stockfishResult.success) {
     addError('Stockfish API', stockfishResult.error);
   }
-  
+
   checkApisBtn.disabled = false;
   checkApisBtn.textContent = 'Check Connections';
 }
@@ -487,12 +433,12 @@ function addError(source, message) {
 function updateErrorIndicator() {
   if (errors.length > 0) {
     errorIndicator.className = 'status-indicator has-errors';
-    headerErrorDot.className = 'header-dot has-errors';
+    if (headerErrorDot) headerErrorDot.className = 'header-dot has-errors';
     errorCount.style.display = 'inline';
     errorCount.textContent = errors.length;
   } else {
     errorIndicator.className = 'status-indicator';
-    headerErrorDot.className = 'header-dot';
+    if (headerErrorDot) headerErrorDot.className = 'header-dot';
     errorCount.style.display = 'none';
   }
 }
@@ -528,7 +474,6 @@ function logError(source, message) {
 // ============================================================================
 
 async function handleCapture() {
-  // Check for API key first - at least one provider needs a key
   const settings = await chrome.storage.sync.get(['anthropicApiKey', 'openrouterApiKey', 'bigmodelApiKey', 'defaultProvider']);
   const hasAnyKey = settings.anthropicApiKey || settings.openrouterApiKey || settings.bigmodelApiKey;
 
@@ -538,7 +483,6 @@ async function handleCapture() {
     return;
   }
 
-  // Check that default provider has a key
   const keyMap = {
     anthropic: settings.anthropicApiKey,
     openrouter: settings.openrouterApiKey,
@@ -549,79 +493,72 @@ async function handleCapture() {
     showSettings();
     return;
   }
-  
-  // Set loading state
+
   captureBtn.classList.add('loading');
   captureBtn.disabled = true;
   updateStatus('Capturing screen...', 'loading');
-  
-  // Clear previous results and show loading placeholders
   clearResults();
-  
+
   try {
-    // Request screenshot from background script
     const response = await chrome.runtime.sendMessage({ type: 'CAPTURE_SCREENSHOT' });
-    
+
     if (!response || !response.success) {
       throw new Error(response?.error || 'Failed to capture screenshot');
     }
-    
-    // Show thumbnail of captured image
+
     thumbnailSection.style.display = 'block';
     thumbnailImg.src = response.imageData;
-    
-    updateStatus('Analyzing position with AI...', 'loading');
-    
+
+    updateStatus('Analyzing position...', 'loading');
+
     // Show sections with loading state
     positionSection.style.display = 'block';
     fenDisplay.textContent = 'Analyzing...';
-    turnDisplay.textContent = '...';
-    
+    if (turnDisplay) turnDisplay.textContent = '...';
+
     movesSection.style.display = 'block';
-    movesList.innerHTML = '<div class="placeholder">⏳ Calculating best moves...</div>';
-    
+    movesList.innerHTML = '<div class="placeholder">Calculating best move...</div>';
+
     boardSection.style.display = 'block';
-    chessBoard.innerHTML = '<div class="placeholder" style="grid-column: span 8; grid-row: span 8;">⏳ Loading board...</div>';
-    
-    explanationSection.style.display = 'block';
-    explanationText.innerHTML = '<div class="placeholder">⏳ Generating explanation...</div>';
-    
-    // Send for analysis
+    chessBoard.innerHTML = '<div class="placeholder" style="grid-column: span 8; grid-row: span 8;">Loading board...</div>';
+
+    // Send full screenshot for analysis — Vision handles the full page,
+    // pieces-array fallback recovers if FEN arithmetic fails.
+    // Pass the user's color so the service worker can ensure
+    // moves are calculated for the correct side.
+    const userColor = boardFlipped ? 'b' : 'w';
     const analysisResponse = await chrome.runtime.sendMessage({
       type: 'ANALYZE_SCREENSHOT',
-      imageData: response.imageData
+      imageData: response.imageData,
+      userColor
     });
-    
+
     console.log('Analysis response:', analysisResponse);
-    
+
     if (analysisResponse.error) {
-      // Even with error, we might have partial data (FEN from Vision)
       if (analysisResponse.fen) {
-        // Show the FEN that was detected
         positionSection.style.display = 'block';
         fenDisplay.textContent = analysisResponse.fen;
-        turnDisplay.textContent = analysisResponse.turn === 'w' ? '⚪ White' : '⚫ Black';
-        turnDisplay.className = analysisResponse.turn === 'w' ? 'turn-white' : 'turn-black';
-        // Render the board even if Stockfish failed
+        if (turnDisplay) {
+          turnDisplay.textContent = analysisResponse.turn === 'w' ? 'White' : 'Black';
+          turnDisplay.className = analysisResponse.turn === 'w' ? 'turn-white' : 'turn-black';
+        }
+        if (fenInput) {
+          fenInput.value = analysisResponse.fenNormalized || `${analysisResponse.fen} ${analysisResponse.turn || 'w'} - - 0 1`;
+        }
         renderChessBoard(analysisResponse.fen, null);
       }
       throw new Error(analysisResponse.error);
     }
-    
-    // Display results
+
     displayResults(analysisResponse);
-    
+
   } catch (error) {
     console.error('Capture error:', error);
     updateStatus('Error: ' + error.message, 'error');
-    
-    // Log error to the error panel
     addError('Analysis', error.message);
-    
-    // Show error in sections
     fenDisplay.textContent = 'Error';
-    movesList.innerHTML = `<div class="placeholder" style="color: #e74c3c;">❌ ${error.message}</div>`;
-    explanationText.innerHTML = '<div class="placeholder">-</div>';
+    movesList.innerHTML = `<div class="placeholder" style="color: #e74c3c;">${error.message}</div>`;
   } finally {
     captureBtn.classList.remove('loading');
     captureBtn.disabled = false;
@@ -631,11 +568,188 @@ async function handleCapture() {
 // Clear all previous results
 function clearResults() {
   fenDisplay.textContent = '-';
-  turnDisplay.textContent = '-';
-  turnDisplay.className = '';
+  if (turnDisplay) { turnDisplay.textContent = '-'; turnDisplay.className = ''; }
+  if (fenInput) fenInput.value = '';
   movesList.innerHTML = '';
   chessBoard.innerHTML = '';
-  explanationText.innerHTML = '';
+}
+
+// ============================================================================
+// FEN TOOLS (Manual correction + rerun)
+// ============================================================================
+
+function getFenInputText() {
+  return (fenInput?.value || '').trim();
+}
+
+function setFenInputText(nextFen) {
+  if (!fenInput) return;
+  fenInput.value = nextFen;
+}
+
+function splitFenString(fen) {
+  const parts = fen.trim().split(/\s+/).filter(Boolean);
+  return {
+    board: parts[0] || '',
+    turn: parts[1] === 'b' ? 'b' : 'w',
+    castling: parts[2] ?? '-',
+    ep: parts[3] ?? '-',
+    halfmove: parts[4] ?? '0',
+    fullmove: parts[5] ?? '1'
+  };
+}
+
+function buildFenString(p) {
+  return `${p.board} ${p.turn} ${p.castling} ${p.ep} ${p.halfmove} ${p.fullmove}`.trim();
+}
+
+function fenBoardToMatrix(boardPart) {
+  const ranks = boardPart.split('/');
+  if (ranks.length !== 8) {
+    throw new Error(`Board must have 8 ranks, got ${ranks.length}`);
+  }
+
+  const matrix = [];
+  for (const rank of ranks) {
+    const row = [];
+    for (const ch of rank) {
+      if ('12345678'.includes(ch)) {
+        for (let i = 0; i < parseInt(ch, 10); i++) row.push('');
+      } else if ('pnbrqkPNBRQK'.includes(ch)) {
+        row.push(ch);
+      } else {
+        throw new Error(`Invalid board character '${ch}'`);
+      }
+    }
+    if (row.length !== 8) {
+      throw new Error(`Rank expanded to ${row.length} squares (expected 8)`);
+    }
+    matrix.push(row);
+  }
+
+  return matrix;
+}
+
+function matrixToFenBoard(matrix) {
+  return matrix.map(row => {
+    let out = '';
+    let empties = 0;
+    for (const cell of row) {
+      if (!cell) {
+        empties++;
+      } else {
+        if (empties) {
+          out += String(empties);
+          empties = 0;
+        }
+        out += cell;
+      }
+    }
+    if (empties) out += String(empties);
+    return out;
+  }).join('/');
+}
+
+function swapPieceCase(ch) {
+  if (!/[a-zA-Z]/.test(ch)) return ch;
+  return ch === ch.toUpperCase() ? ch.toLowerCase() : ch.toUpperCase();
+}
+
+function applyFenTransform(kind) {
+  const fen = getFenInputText();
+  if (!fen) {
+    updateStatus('No FEN to edit yet. Capture a position first.', 'error');
+    return;
+  }
+
+  try {
+    const parts = splitFenString(fen);
+    const matrix = fenBoardToMatrix(parts.board);
+
+    let nextBoard = parts.board;
+    let nextTurn = parts.turn;
+    let nextCastling = parts.castling;
+
+    if (kind === 'toggleTurn') {
+      nextTurn = parts.turn === 'w' ? 'b' : 'w';
+    } else if (kind === 'rotate180') {
+      const rotated = matrix.slice().reverse().map(row => row.slice().reverse());
+      nextBoard = matrixToFenBoard(rotated);
+    } else if (kind === 'mirrorFiles') {
+      const mirrored = matrix.map(row => row.slice().reverse());
+      nextBoard = matrixToFenBoard(mirrored);
+    } else if (kind === 'swapColors') {
+      const swapped = matrix.map(row => row.map(cell => (cell ? swapPieceCase(cell) : '')));
+      nextBoard = matrixToFenBoard(swapped);
+      nextTurn = parts.turn === 'w' ? 'b' : 'w';
+      nextCastling = (parts.castling || '-').split('').map(swapPieceCase).join('') || '-';
+    } else {
+      throw new Error(`Unknown transform: ${kind}`);
+    }
+
+    const nextFen = buildFenString({
+      ...parts,
+      board: nextBoard,
+      turn: nextTurn,
+      castling: nextCastling
+    });
+
+    setFenInputText(nextFen);
+
+    // Update visible position immediately (moves become stale until rerun)
+    fenDisplay.textContent = nextBoard;
+    if (turnDisplay) {
+      turnDisplay.textContent = nextTurn === 'w' ? 'White' : 'Black';
+      turnDisplay.className = nextTurn === 'w' ? 'turn-white' : 'turn-black';
+    }
+    currentFen = nextBoard;
+    currentMoves = null;
+    movesList.innerHTML = '<div class="placeholder">Edit FEN, then click "Re-run Best Moves".</div>';
+    renderChessBoard(nextFen, null);
+
+  } catch (e) {
+    updateStatus('Invalid FEN: ' + e.message, 'error');
+  }
+}
+
+async function rerunFromFen() {
+  const fen = getFenInputText();
+  if (!fen) {
+    updateStatus('Please enter a FEN to analyze.', 'error');
+    return;
+  }
+
+  positionSection.style.display = 'block';
+  movesSection.style.display = 'block';
+  boardSection.style.display = 'block';
+
+  updateStatus('Re-analyzing from FEN...', 'loading');
+  movesList.innerHTML = '<div class="placeholder">Calculating best move...</div>';
+
+  try {
+    const boardPart = fen.split(/\s+/)[0];
+    renderChessBoard(boardPart, null);
+  } catch {
+    // ignore
+  }
+
+  try {
+    const analysisResponse = await chrome.runtime.sendMessage({
+      type: 'ANALYZE_FEN',
+      fen
+    });
+
+    if (analysisResponse.error) {
+      throw new Error(analysisResponse.error);
+    }
+
+    displayResults(analysisResponse);
+  } catch (error) {
+    console.error('FEN rerun error:', error);
+    updateStatus('Error: ' + error.message, 'error');
+    addError('FEN Analysis', error.message);
+    movesList.innerHTML = `<div class="placeholder" style="color: #e74c3c;">${error.message}</div>`;
+  }
 }
 
 // ============================================================================
@@ -645,121 +759,42 @@ function clearResults() {
 function displayResults(data) {
   console.log('[Panel] Displaying results:', data);
 
-  // Show all sections
   positionSection.style.display = 'block';
   movesSection.style.display = 'block';
   boardSection.style.display = 'block';
-  explanationSection.style.display = 'block';
 
-  // Update status
-  updateStatus('Analysis complete!', 'success');
+  const sourceLabel = data.source === 'dom' ? 'DOM read' : 'Vision AI';
+  updateStatus(`Analysis complete! (${sourceLabel})`, 'success');
 
-  // Show comparison box if we have comparison data
-  if (data.comparison && data.comparison.disagreements) {
-    displayComparison(data.comparison);
-  } else {
-    comparisonBox.style.display = 'none';
-  }
-  
   // Display FEN and turn
   if (data.fen) {
     fenDisplay.textContent = data.fen;
-    turnDisplay.textContent = data.turn === 'w' ? '⚪ White' : '⚫ Black';
-    turnDisplay.className = data.turn === 'w' ? 'turn-white' : 'turn-black';
+    if (turnDisplay) {
+      turnDisplay.textContent = data.turn === 'w' ? 'White' : 'Black';
+      turnDisplay.className = data.turn === 'w' ? 'turn-white' : 'turn-black';
+    }
     currentFen = data.fen;
+    if (fenInput) {
+      fenInput.value = data.fenNormalized || `${data.fen} ${data.turn || 'w'} - - 0 1`;
+    }
   } else {
     fenDisplay.textContent = 'Could not detect position';
-    turnDisplay.textContent = '-';
+    if (turnDisplay) turnDisplay.textContent = '-';
     currentFen = null;
+    if (fenInput) fenInput.value = '';
   }
-  
-  // Display moves and render board
+
+  // Display selected move (Elo-based) and render board
   if (data.moves && data.moves.length > 0) {
-    console.log('[Panel] Displaying', data.moves.length, 'moves');
     currentMoves = data.moves;
-    displayMoves(data.moves, data.fen);
-    // Render board with best move highlighted
-    const bestMove = data.moves[0];
-    renderChessBoard(data.fen, bestMove);
+    const moveToShow = data.selectedMove || data.moves[0];
+    displayMoves(data.moves, data.fen, moveToShow, data.engineBest);
+    renderChessBoard(data.fen, moveToShow);
   } else {
-    console.warn('[Panel] No moves to display');
     currentMoves = null;
-    movesList.innerHTML = '<div class="placeholder">No moves found - check browser console for API response</div>';
-    // Still render the board without move highlight
+    movesList.innerHTML = '<div class="placeholder">No moves found</div>';
     renderChessBoard(data.fen, null);
   }
-  
-  // Display explanation
-  if (data.explanation && data.explanation !== 'Could not generate explanation.') {
-    displayExplanation(data.explanation);
-  } else {
-    explanationText.innerHTML = '<div class="placeholder">Unable to generate explanation.</div>';
-  }
-}
-
-// Display comparison results from multi-model analysis
-function displayComparison(comparison) {
-  comparisonBox.style.display = 'block';
-
-  // Build diagnostic table
-  let html = '<table class="comparison-table">';
-  html += '<thead><tr><th>Provider</th><th>Pawns</th><th>Conf</th><th>Status</th></tr></thead>';
-  html += '<tbody>';
-
-  const hasDisagreements = comparison.providerDetails.some(p => p.status === 'disagree' || p.status === 'error');
-
-  comparison.providerDetails.forEach(p => {
-    const providerName = getProviderDisplayName(p.provider);
-    const pawns = `${p.whitePawns}W/${p.blackPawns}B`;
-    const conf = p.confidence === 'high' ? '●●●' : p.confidence === 'medium' ? '●●○' : '●○○';
-
-    let statusHtml = '';
-    let rowClass = '';
-
-    if (p.status === 'default') {
-      statusHtml = '<span class="status-default">★ default</span>';
-      rowClass = 'row-default';
-    } else if (p.status === 'agree') {
-      statusHtml = '<span class="status-agree">✓ matches</span>';
-      rowClass = 'row-agree';
-    } else if (p.status === 'error') {
-      statusHtml = `<span class="status-error">✗ error</span>`;
-      rowClass = 'row-error';
-    } else {
-      statusHtml = `<span class="status-disagree">⚠ ${p.diffCount} squares</span>`;
-      rowClass = 'row-disagree';
-    }
-
-    html += `<tr class="${rowClass}"><td>${providerName}</td><td>${pawns}</td><td>${conf}</td><td>${statusHtml}</td></tr>`;
-  });
-
-  html += '</tbody></table>';
-
-  // Add expandable square details if there are disagreements
-  if (hasDisagreements && comparison.squareDetails && comparison.squareDetails.length > 0) {
-    html += '<details class="square-details"><summary>Show square details (' + comparison.squareDetails.length + ')</summary>';
-    html += '<div class="square-list">';
-    comparison.squareDetails.forEach(d => {
-      const providerName = getProviderDisplayName(d.provider);
-      html += `<div class="square-diff">${providerName} ${d.square}: ${d.otherPiece} vs ${d.defaultPiece}</div>`;
-    });
-    html += '</div></details>';
-  }
-
-  comparisonResults.innerHTML = html;
-
-  // Show which model is being used for Stockfish/explanation
-  const defaultName = getProviderDisplayName(comparison.defaultProvider);
-  comparisonDefault.innerHTML = `Using: ${defaultName} for analysis <span class="default-star">★</span>`;
-}
-
-function getProviderDisplayName(provider) {
-  const names = {
-    anthropic: 'Anthropic',
-    openrouter: 'OpenRouter',
-    bigmodel: 'BigModel'
-  };
-  return names[provider] || provider;
 }
 
 // Unicode pieces
@@ -771,18 +806,18 @@ const PIECE_ICONS = {
 // Get piece at square from FEN
 function getPieceAtSquare(fen, square) {
   if (!fen || !square) return null;
-  
+
   const file = square.charCodeAt(0) - 97; // a=0, h=7
   const rank = 8 - parseInt(square[1]);   // 8=0, 1=7
-  
+
   const boardPart = fen.split(' ')[0];
   const ranks = boardPart.split('/');
-  
+
   if (rank < 0 || rank > 7) return null;
-  
+
   const rankStr = ranks[rank];
   let col = 0;
-  
+
   for (const char of rankStr) {
     if ('12345678'.includes(char)) {
       col += parseInt(char);
@@ -794,95 +829,89 @@ function getPieceAtSquare(fen, square) {
     }
     if (col > file) break;
   }
-  
+
   return null;
 }
 
-function displayMoves(moves, fen) {
-  // Piece names for display
+function displayMoves(moves, fen, selectedMove, engineBest) {
   const PIECE_NAMES = {
     'K': 'King', 'Q': 'Queen', 'R': 'Rook', 'B': 'Bishop', 'N': 'Knight', 'P': 'Pawn',
     'k': 'King', 'q': 'Queen', 'r': 'Rook', 'b': 'Bishop', 'n': 'Knight', 'p': 'Pawn'
   };
-  
-  // Create a vertical list of all moves
-  let html = '';
-  
-  moves.forEach((move, i) => {
-    const fromSquare = move.from || (move.move ? move.move.substring(0, 2) : '');
-    const toSquare = move.to || (move.move ? move.move.substring(2, 4) : '');
-    
-    // Get the piece that's moving
-    const piece = getPieceAtSquare(fen, fromSquare);
-    const pieceIcon = piece ? PIECE_ICONS[piece] : '';
-    const pieceName = piece ? PIECE_NAMES[piece] : '';
-    const isWhitePiece = piece && piece === piece.toUpperCase();
-    
-    const isBest = i === 0;
-    const rankDisplay = isBest ? '👑' : (i + 1);
-    
-    html += `
-      <div class="move-row ${isBest ? 'best' : ''} ${isBest ? 'active' : ''}" data-move-index="${i}">
-        <span class="move-rank">${rankDisplay}</span>
-        <span class="move-piece-icon ${isWhitePiece ? 'white-piece' : 'black-piece'}">${pieceIcon}</span>
-        <div class="move-text">
-          <span class="move-piece-name">${pieceName}</span>
-          <span class="move-from-square">${fromSquare}</span>
-          <span class="move-arrow">→</span>
-          <span class="move-to-square">${toSquare}</span>
+
+  if (!moves || moves.length === 0) {
+    movesList.innerHTML = '<div class="placeholder">No moves found</div>';
+    return;
+  }
+
+  const move = selectedMove || moves[0];
+  const fromSquare = move.from || (move.move ? move.move.substring(0, 2) : '');
+  const toSquare = move.to || (move.move ? move.move.substring(2, 4) : '');
+
+  const piece = getPieceAtSquare(fen, fromSquare);
+  const pieceIcon = piece ? PIECE_ICONS[piece] : '';
+  const pieceName = piece ? PIECE_NAMES[piece] : '';
+  const isWhitePiece = piece && piece === piece.toUpperCase();
+
+  // Check if selected move differs from engine best
+  let engineNoteHtml = '';
+  if (engineBest && engineBest.move !== move.move) {
+    const engineFrom = engineBest.from || engineBest.move.substring(0, 2);
+    const engineTo = engineBest.to || engineBest.move.substring(2, 4);
+    const selectedEval = typeof move.evaluation === 'number' ? move.evaluation : 0;
+    const bestEval = typeof engineBest.evaluation === 'number' ? engineBest.evaluation : 0;
+    const cpDiff = Math.round((bestEval - selectedEval) * 100);
+    engineNoteHtml = `<div class="engine-note">Engine prefers ${engineFrom}\u2192${engineTo}${cpDiff > 0 ? ` (+${cpDiff}cp)` : ''}</div>`;
+  }
+
+  movesList.innerHTML = `
+    <div class="best-move-container">
+      <div class="best-move-label">Suggested Move</div>
+      <div class="best-move-content">
+        <span class="best-move-piece ${isWhitePiece ? 'white-piece' : 'black-piece'}">${pieceIcon}</span>
+        <div class="best-move-notation">
+          <span class="best-move-from">${fromSquare}</span>
+          <span class="best-move-arrow">\u2192</span>
+          <span class="best-move-to">${toSquare}</span>
         </div>
-        <span class="move-eval ${getEvalClass(move.evaluation)}">${formatEval(move.evaluation)}</span>
       </div>
-    `;
-  });
-  
-  movesList.innerHTML = html;
-  
-  // Add click handlers to highlight moves on board
-  document.querySelectorAll('.move-row').forEach(row => {
-    row.addEventListener('click', () => {
-      const index = parseInt(row.dataset.moveIndex);
-      if (currentMoves && currentMoves[index]) {
-        renderChessBoard(currentFen, currentMoves[index]);
-        // Update active state - keep best class but toggle active
-        document.querySelectorAll('.move-row').forEach(r => r.classList.remove('active'));
-        row.classList.add('active');
-      }
-    });
-  });
+      ${pieceName ? `<div class="best-move-name">${pieceName}</div>` : ''}
+      ${engineNoteHtml}
+    </div>
+  `;
 }
 
 // Render a mini board with arrow showing the move
 function renderMiniBoard(container, fen, move) {
   if (!fen) return;
-  
+
   const MINI_PIECES = {
     'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
     'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
   };
-  
+
   // Parse move to get from/to squares
   let fromSquare = null;
   let toSquare = null;
-  
+
   const moveStr = move.move || '';
   if (moveStr.length >= 4 && /^[a-h][1-8][a-h][1-8]/.test(moveStr)) {
     fromSquare = moveStr.substring(0, 2);
     toSquare = moveStr.substring(2, 4);
   }
-  
+
   // Parse FEN
   const boardPart = fen.split(' ')[0];
   const ranks = boardPart.split('/');
-  
+
   // Build mini board HTML
   let boardHtml = '<div class="mini-board">';
-  
+
   for (let rankIndex = 0; rankIndex < 8; rankIndex++) {
     const rank = ranks[rankIndex];
     const rankNum = 8 - rankIndex;
     let fileIndex = 0;
-    
+
     for (const char of rank) {
       if ('12345678'.includes(char)) {
         const emptyCount = parseInt(char);
@@ -891,7 +920,7 @@ function renderMiniBoard(container, fen, move) {
           const square = file + rankNum;
           const isLight = (rankIndex + fileIndex) % 2 === 0;
           const highlight = getMiniBoardHighlight(square, fromSquare, toSquare);
-          
+
           boardHtml += `<div class="mini-square ${isLight ? 'light' : 'dark'} ${highlight}"></div>`;
           fileIndex++;
         }
@@ -902,7 +931,7 @@ function renderMiniBoard(container, fen, move) {
         const isWhite = char === char.toUpperCase();
         const pieceChar = MINI_PIECES[char] || char;
         const highlight = getMiniBoardHighlight(square, fromSquare, toSquare);
-        
+
         boardHtml += `<div class="mini-square ${isLight ? 'light' : 'dark'} ${highlight}">
           <span class="mini-piece ${isWhite ? 'white' : 'black'}">${pieceChar}</span>
         </div>`;
@@ -910,15 +939,15 @@ function renderMiniBoard(container, fen, move) {
       }
     }
   }
-  
+
   boardHtml += '</div>';
-  
+
   // Add SVG arrow overlay if we have from/to squares
   if (fromSquare && toSquare) {
     const boardSize = 160;
     const from = squareToCoords(fromSquare, boardSize);
     const to = squareToCoords(toSquare, boardSize);
-    
+
     // Shorten arrow slightly so it doesn't overlap with arrowhead
     const dx = to.x - from.x;
     const dy = to.y - from.y;
@@ -926,23 +955,23 @@ function renderMiniBoard(container, fen, move) {
     const shortenBy = 8;
     const toX = to.x - (dx / length) * shortenBy;
     const toY = to.y - (dy / length) * shortenBy;
-    
+
     boardHtml += `
       <svg class="move-arrow-svg" viewBox="0 0 ${boardSize} ${boardSize}">
         <defs>
-          <marker id="arrowhead-${fromSquare}${toSquare}" markerWidth="10" markerHeight="7" 
+          <marker id="arrowhead-${fromSquare}${toSquare}" markerWidth="10" markerHeight="7"
             refX="9" refY="3.5" orient="auto" fill="rgba(0, 150, 0, 0.9)">
             <polygon points="0 0, 10 3.5, 0 7" />
           </marker>
         </defs>
-        <line class="move-arrow" 
-          x1="${from.x}" y1="${from.y}" 
+        <line class="move-arrow"
+          x1="${from.x}" y1="${from.y}"
           x2="${toX}" y2="${toY}"
           marker-end="url(#arrowhead-${fromSquare}${toSquare})" />
       </svg>
     `;
   }
-  
+
   container.innerHTML = boardHtml;
 }
 
@@ -961,32 +990,6 @@ function getMiniBoardHighlight(square, fromSquare, toSquare) {
   if (square === fromSquare) return 'from-square';
   if (square === toSquare) return 'to-square';
   return '';
-}
-
-function displayExplanation(text) {
-  // Highlight chess terminology
-  const terms = [
-    'check', 'checkmate', 'stalemate', 'castling', 'en passant',
-    'fork', 'pin', 'skewer', 'discovered attack', 'double attack',
-    'zwischenzug', 'zugzwang', 'tempo', 'initiative', 'development',
-    'center control', 'king safety', 'pawn structure', 'outpost',
-    'fianchetto', 'gambit', 'sacrifice', 'exchange', 'material',
-    'positional', 'tactical', 'endgame', 'middlegame', 'opening',
-    'threat', 'counterplay', 'prophylaxis', 'weakness', 'pressure'
-  ];
-  
-  let formatted = text;
-  
-  terms.forEach(term => {
-    const regex = new RegExp(`\\b(${term})\\b`, 'gi');
-    formatted = formatted.replace(regex, '<span class="chess-term">$1</span>');
-  });
-  
-  // Highlight move notation
-  const moveRegex = /\b([KQRBN]?[a-h]?[1-8]?x?[a-h][1-8](?:=[QRBN])?[+#]?|O-O(?:-O)?)\b/g;
-  formatted = formatted.replace(moveRegex, '<span class="move-inline">$1</span>');
-  
-  explanationText.innerHTML = formatted;
 }
 
 // ============================================================================
@@ -1008,21 +1011,21 @@ function renderChessBoard(fen, bestMove) {
     chessBoard.innerHTML = '<div class="placeholder" style="grid-column: span 8; grid-row: span 8;">No position to display</div>';
     return;
   }
-  
+
   // Parse FEN - get just the board part
   const boardPart = fen.split(' ')[0];
   const ranks = boardPart.split('/');
-  
+
   // Parse best move to get from/to squares
   let fromSquare = null;
   let toSquare = null;
-  
+
   if (bestMove) {
     // Try direct from/to first
     if (bestMove.from && bestMove.to) {
       fromSquare = bestMove.from;
       toSquare = bestMove.to;
-    } 
+    }
     // Then try parsing from move string
     else if (bestMove.move) {
       const move = bestMove.move;
@@ -1032,30 +1035,30 @@ function renderChessBoard(fen, bestMove) {
       }
     }
   }
-  
+
   console.log('[Panel] Rendering board, from:', fromSquare, 'to:', toSquare, 'flipped:', boardFlipped);
-  
+
   // Generate 64 squares - handle flipping
   let html = '';
-  
+
   for (let visualRow = 0; visualRow < 8; visualRow++) {
     for (let visualCol = 0; visualCol < 8; visualCol++) {
       // Map visual position to actual board position
       const actualRow = boardFlipped ? (7 - visualRow) : visualRow;
       const actualCol = boardFlipped ? (7 - visualCol) : visualCol;
-      
+
       const rankNum = 8 - actualRow; // 8 to 1
       const file = String.fromCharCode(97 + actualCol); // a-h
       const square = file + rankNum;
-      
+
       // Get piece at this position
       const rank = ranks[actualRow];
       const piece = getPieceAtPosition(rank, actualCol);
-      
+
       // Determine square color (based on actual position, not visual)
       const isLight = (actualRow + actualCol) % 2 === 0;
       const highlight = getSquareHighlight(square, fromSquare, toSquare);
-      
+
       if (piece) {
         const isWhite = piece === piece.toUpperCase();
         const pieceChar = PIECES[piece] || piece;
@@ -1067,7 +1070,7 @@ function renderChessBoard(fen, bestMove) {
       }
     }
   }
-  
+
   chessBoard.innerHTML = html;
 }
 
@@ -1101,23 +1104,6 @@ function getSquareHighlight(square, fromSquare, toSquare) {
 function updateStatus(text, type = 'info') {
   statusText.textContent = text;
   statusDot.className = `status-dot ${type}`;
-}
-
-function formatEval(evaluation) {
-  if (typeof evaluation === 'string' && (evaluation.startsWith('M') || evaluation.startsWith('#'))) {
-    return evaluation;
-  }
-  const num = parseFloat(evaluation);
-  if (isNaN(num)) return '?';
-  return (num > 0 ? '+' : '') + num.toFixed(2);
-}
-
-function getEvalClass(evaluation) {
-  const num = parseFloat(evaluation);
-  if (isNaN(num)) return '';
-  if (num > 0.3) return 'positive';
-  if (num < -0.3) return 'negative';
-  return '';
 }
 
 // ============================================================================

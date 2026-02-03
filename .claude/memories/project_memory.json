@@ -2,81 +2,40 @@
   "memories": [
     {
       "type": "tech_decision",
-      "content": "Lichess Cloud Eval API for move analysis (5 variations, 50+ ply depth). Chess-API.com fallback. Rate limiting: 1s between requests, 60s backoff on 429.",
-      "added_at": "2026-01-26T22:38:23.571717"
-    },
-    {
-      "type": "tech_decision",
-      "content": "Multi-provider Vision: Anthropic Direct, OpenRouter (Gemini 3 Flash), BigModel (GLM-4V). Star icon = default provider for Stockfish/explanation. Checkboxes enable comparison mode.",
-      "added_at": "2026-01-27T00:15:00.000000"
-    },
-    {
-      "type": "known_issue",
-      "content": "Vision API FEN recognition has accuracy issues. v2.10.1 fix: condensed prompt with JSON-only instruction, max_tokens 5000. Multi-model comparison helps identify which model is erring.",
-      "added_at": "2026-01-27T00:05:00.000000"
-    },
-    {
-      "type": "completed_feature",
-      "content": "v2.10.1: Prompt truncation bugfix. v2.10.0: Multi-provider Vision with comparison UI. v2.9.2: Opus 4.5, Lichess MultiPV, debug logging.",
-      "added_at": "2026-01-27T00:05:00.000000"
+      "content": "Architecture: DOM extraction on chess.com (primary, 100% accurate) via chrome.scripting.executeScript — injects fresh each capture because SPA navigation breaks persistent content script channels. Manifest content script only for middle-click listener (persistent). Vision API fallback for non-chess.com sites. Stockfish: Lichess Cloud Eval primary, Chess-API.com fallback. Vision providers: Anthropic Direct, OpenRouter, BigModel (GLM-4V). Alt+S shortcut registered via Chrome Commands API.",
+      "added_at": "2026-02-04T05:57:00.000000"
     },
     {
       "type": "preference",
-      "content": "Version visible in header badge + settings footer. Changelog updated each version. Bug fixes use .1 increments. User wants concise but detailed diagnostic info for model disagreements.",
-      "added_at": "2026-01-27T00:12:00.000000"
+      "content": "Version in 3 spots: manifest.json, panel.html (header badge + settings footer), panel.js comment. Bug fixes use .1 increments. Update CHANGELOG.md with every version bump. User prefers concise diagnostic info. Learning output style with Insight blocks. Default provider: OpenRouter with google/gemini-3-flash-preview. Icon: blue-pink gradient outline knight, no background. Current version: v3.7.0.",
+      "added_at": "2026-02-04T06:08:00.000000"
+    },
+    {
+      "type": "completed_feature",
+      "content": "v3.0-3.5: Elo-based move selection (softmax, slider 800-2400), .env.local loader, compact header with Capture/Toggle/Settings/Close, OpenRouter models (Gemini 3 Pro/Flash, Opus 4.5). v3.6-3.7: Chess.com DOM extraction with shadow DOM support, middle-click capture via content script, 'DOM read' vs 'Vision AI' source label, blue-pink gradient knight icon.",
+      "added_at": "2026-02-04T06:08:00.000000"
+    },
+    {
+      "type": "known_issue",
+      "content": "Vision API returns wrong FENs from full-page screenshots (ads/sidebars confuse model). DOM extraction bypasses this on chess.com. Vision path still unreliable for other sites — potential improvements: pixel-based board crop, prompt engineering, multi-model consensus. Middle-click capture may not register if user doesn't reload extension + refresh chess.com page after updates.",
+      "added_at": "2026-02-04T06:22:00.000000"
     }
   ],
   "manual_memories": [],
   "realtime_memories": [
     {
       "type": "claude_response",
-      "content": "Good - you confirmed the diagnostic approach. Let me continue with the UI design.\n\n---\n\n## Design Section 2: UI Layout\n\nI'll add a \"MODEL COMPARISON\" section that replaces the current verbose disagree",
-      "added_at": "2026-01-27T00:14:08.579523",
+      "content": "Got it — personal use only, bundle everything.\n\nOne thing to flag before we proceed: **Modern Chrome (75+) blocks side-loading `.crx` files** unless you use enterprise policy or developer mode. On you",
+      "added_at": "2026-02-04T06:38:39.634800",
       "source": "realtime_capture"
     },
     {
       "type": "message",
-      "content": "'/Users/forest/Downloads/chess-study-debug-2026-01-26T15-12-40.txt' see the logs to help give you more info",
-      "added_at": "2026-01-27T00:14:08.579534",
-      "source": "realtime_capture"
-    },
-    {
-      "type": "claude_response",
-      "content": "This is very helpful. Now I can see the actual diagnostic data:\n\n| Metric | OpenRouter (Gemini) | Anthropic (Opus 4.5) |\n|--------|---------------------|----------------------|\n| White Pawns | 6 | 7 |",
-      "added_at": "2026-01-27T00:15:36.069924",
-      "source": "realtime_capture"
-    },
-    {
-      "type": "message",
-      "content": "what do you suggest?",
-      "added_at": "2026-01-27T00:15:36.069945",
-      "source": "realtime_capture"
-    },
-    {
-      "type": "claude_response",
-      "content": "My recommendation:\n\n**Replace the current verbose disagreement list with a compact diagnostic table.** The individual square differences (a7, d7, f7...) are noise - the pawn counts tell the story inst",
-      "added_at": "2026-01-27T00:16:11.344016",
-      "source": "realtime_capture"
-    },
-    {
-      "type": "message",
-      "content": "yes go",
-      "added_at": "2026-01-27T00:16:11.344114",
-      "source": "realtime_capture"
-    },
-    {
-      "type": "claude_response",
-      "content": "API Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"messages.27.content.11: `thinking` or `redacted_thinking` blocks in the latest assistant message cannot be modified. T",
-      "added_at": "2026-01-27T00:18:15.843048",
-      "source": "realtime_capture"
-    },
-    {
-      "type": "message",
-      "content": "continue",
-      "added_at": "2026-01-27T00:18:15.843073",
+      "content": "zip is fine and name it chess-study-tool",
+      "added_at": "2026-02-04T06:38:39.634849",
       "source": "realtime_capture"
     }
   ],
   "created_at": "2026-01-26T22:12:09.555540",
-  "updated_at": "2026-01-27T00:23:38.693971"
+  "updated_at": "2026-02-04T06:38:39.634850"
 }

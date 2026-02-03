@@ -1,20 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Background circle -->
-  <circle cx="64" cy="64" r="60" fill="#1a1a2e"/>
-  <circle cx="64" cy="64" r="56" fill="#16213e"/>
-  
-  <!-- Chess knight silhouette -->
-  <path d="M45 95 L45 75 L40 75 L40 70 L45 70 L45 55 C45 45 50 38 60 35 L55 30 L60 25 L65 32 C70 30 75 32 78 38 L85 35 L88 42 L80 45 C82 50 83 55 83 60 L83 70 L88 70 L88 75 L83 75 L83 95 Z" fill="#e0e0e0"/>
-  
-  <!-- Knight eye -->
-  <circle cx="65" cy="45" r="4" fill="#1a1a2e"/>
-  
-  <!-- AI sparkle effects -->
-  <circle cx="30" cy="35" r="3" fill="#3498db" opacity="0.8"/>
-  <circle cx="98" cy="55" r="2" fill="#3498db" opacity="0.6"/>
-  <circle cx="25" cy="85" r="2" fill="#2ecc71" opacity="0.7"/>
-  <circle cx="100" cy="90" r="3" fill="#2ecc71" opacity="0.8"/>
-  
-  <!-- Subtle glow ring -->
-  <circle cx="64" cy="64" r="58" fill="none" stroke="#3498db" stroke-width="1" opacity="0.3"/>
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+  </defs>
+  <!-- Knight path scaled to fill the full icon -->
+  <g fill="none" stroke="url(#g)" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Horse head profile - large, fills viewBox -->
+    <path d="M20 122 L20 58 C20 38 28 24 42 16 L34 6 C34 4 36 2 38 2
+             L52 2 C56 -2 64 -2 72 2 C82 6 88 14 90 24
+             L92 32 C94 38 90 44 84 46
+             L76 50 C84 56 92 68 92 80 L92 96
+             L108 96 L108 122 Z"/>
+    <!-- Ear -->
+    <path d="M58 4 L66 -8 L74 4"/>
+    <!-- Eye -->
+    <circle cx="56" cy="30" r="5" fill="url(#g)" stroke="none"/>
+    <!-- Nostril -->
+    <circle cx="36" cy="16" r="3" fill="url(#g)" stroke="none"/>
+    <!-- Mane lines -->
+    <path d="M76 10 C82 18 86 28 86 40"/>
+    <path d="M82 30 C88 40 92 54 92 66"/>
+  </g>
 </svg>

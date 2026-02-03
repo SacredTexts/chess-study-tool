@@ -1,17 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Chess Study Tool - AI Analysis",
-  "version": "2.10.2",
-  "description": "Standalone chess learning tool - captures screenshots and provides AI-powered analysis. No interaction with chess websites.",
+  "version": "3.7.0",
+  "description": "Chess learning tool - reads board positions from chess.com or screenshots, analyzes with Stockfish, and suggests the best move.",
 
   "permissions": [
     "storage",
     "activeTab",
     "tabs",
-    "sidePanel"
+    "sidePanel",
+    "scripting"
   ],
 
   "host_permissions": [
+    "<all_urls>",
     "https://lichess.org/*",
     "https://chess-api.com/*",
     "https://api.anthropic.com/*",
@@ -41,5 +43,21 @@
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
+  },
+
+  "content_scripts": [{
+    "matches": ["*://*.chess.com/*"],
+    "js": ["src/content/chess-com.js"],
+    "run_at": "document_idle"
+  }],
+
+  "commands": {
+    "capture-analyze": {
+      "suggested_key": {
+        "default": "Alt+S",
+        "mac": "Alt+S"
+      },
+      "description": "Capture and analyze chess position"
+    }
   }
 }
