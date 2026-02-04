@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.10.4] - 2026-02-04
+
+### Added
+- **Top engine lines** - Shows up to 5 ranked moves from Stockfish as blue chips below the engine note. Each chip displays piece icon, move notation, and centipawn evaluation. Only appears when multiple moves are available (Lichess cloud eval). Gracefully hidden when only 1 move returned (Chess-API fallback). No additional API calls
+
+## [3.10.3] - 2026-02-04
+
+### Added
+- **API cost tracking** - Shows per-move and cumulative session cost for OpenRouter API calls. Queries OpenRouter's generation endpoint for exact charges. Displays below the board as "This move / Session" with dollar amounts. Shows $0.00 when DOM extraction is used (no API cost). Resets when panel is closed
+
+## [3.10.2] - 2026-02-04
+
+### Fixed
+- **Middle-click reliability** - Content script re-injected when panel opens, fixing stale runtime connections that caused middle-click to stop working after navigation. No more cache clearing or extension reinstalls needed
+- **TRIGGER_CAPTURE relay** - Service worker now relays middle-click messages to the panel, closing a gap where messages were silently dropped
+- **Duplicate listener prevention** - Re-injected content scripts replace old handlers instead of stacking, preventing double-fire
+
+## [3.10.0] - 2026-02-04
+
+### Added
+- **Engine risk signal** - Engine best move now always shown below the suggested move. Amber warning when Elo selection matches engine best ("looks suspicious"); green checkmark when they differ ("Engine prefers XX→XX")
+- **Session suspicion tracker** - Tracks engine-match accuracy across captures. Shows percentage bar with Elo-based threshold marker. Color shifts green→amber→red as accuracy exceeds normal range for set Elo. Reset button to start fresh per game
+
+## [3.9.0] - 2026-02-04
+
+### Added
+- **Universal DOM extraction** - Board position reading now works on any chess web app, not just chess.com. Tries four detection patterns in order:
+  1. chess.com (existing) — `.piece` + `square-XY` classes
+  2. react-chessboard — `data-square` + `data-piece` attributes
+  3. Image-based boards — `button.square` + `<img>` with piece filenames (e.g. ReactJS-Chess)
+  4. Generic heuristic — any elements with algebraic `data-square` attributes
+- DOM extraction now attempted on all sites before falling back to Vision AI
+- Source label in panel shows which detection pattern matched (e.g. "DOM (react-chessboard)")
+
 ## [3.8.1] - 2026-02-04
 
 ### Changed

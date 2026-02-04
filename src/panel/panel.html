@@ -344,6 +344,28 @@
       margin-left: auto;
     }
 
+    /* ============ GAME OVER ============ */
+    .game-over {
+      text-align: center;
+      font-weight: 800;
+      font-size: 22px;
+      padding: 12px 8px;
+      border-radius: 10px;
+      letter-spacing: 1px;
+    }
+
+    .game-over.victory {
+      color: #4ade80;
+      background: rgba(74, 222, 128, 0.1);
+      border: 2px solid #22c55e;
+    }
+
+    .game-over.defeat {
+      color: #f87171;
+      background: rgba(248, 113, 113, 0.1);
+      border: 2px solid #ef4444;
+    }
+
     .engine-note {
       padding: 4px 10px;
       border: 2px solid #65a30d;
@@ -351,6 +373,195 @@
       font-size: 12px;
       font-weight: 500;
       color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .engine-note.engine-match {
+      border-color: #d97706;
+      background: rgba(217, 119, 6, 0.1);
+      color: #fbbf24;
+    }
+
+    .engine-note.engine-differ {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.08);
+      color: #86efac;
+    }
+
+    .risk-icon {
+      color: #f59e0b;
+      font-size: 13px;
+    }
+
+    .safe-icon {
+      color: #22c55e;
+      font-size: 13px;
+    }
+
+    /* ============ TOP ENGINE LINES ============ */
+    .engine-lines {
+      margin-top: 6px;
+    }
+
+    .engine-lines-title {
+      font-size: 9px;
+      color: #556;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .engine-lines-row {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .engine-line-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 8px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 6px;
+      min-width: 56px;
+      cursor: default;
+    }
+
+    .engine-line-chip:first-child {
+      background: rgba(59, 130, 246, 0.18);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .chip-move {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #d0d8e8;
+    }
+
+    .chip-piece {
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .chip-arrow {
+      color: #60a5fa;
+      font-size: 10px;
+    }
+
+    .chip-eval {
+      font-size: 9px;
+      color: #7aa2d4;
+      font-family: monospace;
+      margin-top: 1px;
+    }
+
+    /* ============ SESSION TRACKER ============ */
+    .session-tracker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .tracker-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tracker-stats {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .tracker-label {
+      color: #666;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .tracker-accuracy {
+      font-weight: 700;
+      font-size: 13px;
+      color: #86efac;
+    }
+
+    .tracker-accuracy.warning {
+      color: #fbbf24;
+    }
+
+    .tracker-accuracy.danger {
+      color: #f87171;
+    }
+
+    .tracker-detail {
+      color: #555;
+      font-size: 10px;
+    }
+
+    .tracker-bar-wrapper {
+      position: relative;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      overflow: visible;
+    }
+
+    .tracker-bar {
+      height: 100%;
+      border-radius: 2px;
+      background: #22c55e;
+      transition: width 0.3s, background 0.3s;
+    }
+
+    .tracker-bar.warning {
+      background: #f59e0b;
+    }
+
+    .tracker-bar.danger {
+      background: #ef4444;
+    }
+
+    .tracker-threshold {
+      position: absolute;
+      top: -2px;
+      width: 1px;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .tracker-reset {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #666;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .tracker-reset:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: #aaa;
     }
 
     /* ============ MINI BOARD ============ */
@@ -910,6 +1121,31 @@
       margin-right: 8px;
     }
 
+    /* ============ API COST DISPLAY ============ */
+    .cost-display {
+      padding: 8px 12px;
+      margin-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .cost-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+    }
+
+    .cost-label {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .cost-value {
+      font-size: 11px;
+      color: #aaa;
+      font-family: monospace;
+    }
+
     /* ============ SETTINGS FOOTER ============ */
     .settings-footer {
       margin-top: 24px;
@@ -1027,6 +1263,22 @@
     </div>
   </div>
 
+  <!-- SESSION TRACKER -->
+  <div class="session-tracker" id="session-tracker" style="display: none;">
+    <div class="tracker-content">
+      <div class="tracker-stats">
+        <span class="tracker-label">Session</span>
+        <span class="tracker-accuracy" id="tracker-accuracy">0%</span>
+        <span class="tracker-detail" id="tracker-detail">0/0</span>
+      </div>
+      <div class="tracker-bar-wrapper">
+        <div class="tracker-bar" id="tracker-bar" style="width: 0%;"></div>
+        <div class="tracker-threshold" id="tracker-threshold" style="left: 65%;"></div>
+      </div>
+    </div>
+    <button class="tracker-reset" id="tracker-reset" title="Reset session">&#8634;</button>
+  </div>
+
   <!-- MAIN CONTENT -->
   <div class="main-content" id="main-content">
     <!-- Best Move -->
@@ -1061,6 +1313,18 @@
             <span>Move to</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- API COST TRACKING -->
+    <div id="cost-display" class="cost-display" style="display:none">
+      <div class="cost-row">
+        <span class="cost-label">This move</span>
+        <span id="cost-move" class="cost-value">$0.0000</span>
+      </div>
+      <div class="cost-row">
+        <span class="cost-label">Session</span>
+        <span id="cost-session" class="cost-value">$0.0000</span>
       </div>
     </div>
 
@@ -1247,7 +1511,7 @@
 
     <!-- Version Footer -->
     <div class="settings-footer">
-      <span class="settings-version">Chess Study Tool v3.8.1</span>
+      <span class="settings-version">Chess Study Tool v3.10.4</span>
       <span class="settings-credits">Powered by Claude Vision & Lichess</span>
     </div>
   </div>

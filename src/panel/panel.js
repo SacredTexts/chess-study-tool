@@ -1,5 +1,5 @@
 /**
- * Chess Study Tool - Panel Script (v3.8.1)
+ * Chess Study Tool - Panel Script (v3.10.4)
  *
  * Standalone learning tool that:
  * 1. Captures screenshots on user request
@@ -96,6 +96,13 @@ let boardFlipped = false;  // false = white on bottom, true = black on bottom
 let currentFen = null;
 let currentMoves = null;
 
+// Session suspicion tracking
+let sessionCaptures = 0;
+let sessionEngineMatches = 0;
+
+// Session API cost tracking
+let sessionTotalCost = 0;
+
 // Header dots
 const headerAnthropicDot = document.getElementById('header-anthropic-dot');
 const headerStockfishDot = document.getElementById('header-stockfish-dot');
@@ -110,6 +117,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load saved settings
   await loadSettings();
 
+  // Re-inject content script to refresh stale runtime connections
+  chrome.runtime.sendMessage({ type: 'REINJECT_CONTENT_SCRIPT' }).catch(() => {});
+
   // Setup event listeners
   captureBtn.addEventListener('click', handleCapture);
   settingsToggle.addEventListener('click', showSettings);
@@ -119,6 +129,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Close button - close the window
   closeBtn.addEventListener('click', () => {
     window.close();
+  });
+
+  // Session tracker reset
+  document.getElementById('tracker-reset').addEventListener('click', () => {
+    sessionCaptures = 0;
+    sessionEngineMatches = 0;
+    updateSuspicionTracker();
   });
 
   // API check button
@@ -590,6 +607,7 @@ async function handleCapture() {
       throw new Error(analysisResponse.error);
     }
 
+    analysisResponse._isNewCapture = true;
     displayResults(analysisResponse);
 
   } catch (error) {
@@ -804,7 +822,14 @@ function displayResults(data) {
   movesSection.style.display = 'block';
   boardSection.style.display = 'block';
 
-  const sourceLabel = data.source === 'dom' ? 'DOM read' : 'Vision AI';
+  const sourceLabels = {
+    'dom-chesscom': 'DOM (chess.com)',
+    'dom-react-chessboard': 'DOM (react-chessboard)',
+    'dom-img-pieces': 'DOM (image-based)',
+    'dom-generic': 'DOM (detected)',
+    'dom': 'DOM read'
+  };
+  const sourceLabel = sourceLabels[data.source] || 'Vision AI';
   updateStatus(`Analysis complete! (${sourceLabel})`, 'success');
 
   // Display FEN and turn
@@ -831,10 +856,39 @@ function displayResults(data) {
     const moveToShow = data.selectedMove || data.moves[0];
     displayMoves(data.moves, data.fen, moveToShow, data.engineBest);
     renderChessBoard(data.fen, moveToShow);
+
+    // Track session suspicion (only for fresh captures, not reruns/flips)
+    if (data._isNewCapture && data.engineBest) {
+      const movesMatch = data.engineBest.move === moveToShow.move;
+      sessionCaptures++;
+      if (movesMatch) sessionEngineMatches++;
+      updateSuspicionTracker();
+    }
   } else {
     currentMoves = null;
-    movesList.innerHTML = '<div class="placeholder">No moves found</div>';
+    // No moves = game over. Determine win/loss from whose turn it is.
+    const userColor = boardFlipped ? 'b' : 'w';
+    const sideToMove = data.turn || 'w';
+    if (data.fen && sideToMove !== userColor) {
+      movesList.innerHTML = '<div class="game-over victory">Victory!</div>';
+    } else if (data.fen && sideToMove === userColor) {
+      movesList.innerHTML = '<div class="game-over defeat">You Fucking Lost!</div>';
+    } else {
+      movesList.innerHTML = '<div class="placeholder">No moves found</div>';
+    }
     renderChessBoard(data.fen, null);
+  }
+
+  // Update API cost display
+  const moveCost = data.openrouterCost || 0;
+  sessionTotalCost += moveCost;
+  const costDisplay = document.getElementById('cost-display');
+  const costMove = document.getElementById('cost-move');
+  const costSession = document.getElementById('cost-session');
+  if (costDisplay && costMove && costSession) {
+    costMove.textContent = `$${moveCost.toFixed(4)}`;
+    costSession.textContent = `$${sessionTotalCost.toFixed(4)}`;
+    costDisplay.style.display = 'block';
   }
 }
 
@@ -894,11 +948,61 @@ function displayMoves(moves, fen, selectedMove, engineBest) {
   const pieceName = piece ? PIECE_NAMES[piece] : '';
   const isWhitePiece = piece && piece === piece.toUpperCase();
 
+  // Always-visible engine note with risk signal
   let engineNoteHtml = '';
-  if (engineBest && engineBest.move !== move.move) {
+  const movesMatch = engineBest && engineBest.move === move.move;
+
+  if (engineBest) {
     const engineFrom = engineBest.from || engineBest.move.substring(0, 2);
     const engineTo = engineBest.to || engineBest.move.substring(2, 4);
-    engineNoteHtml = `<div class="engine-note">Engine prefers ${engineFrom}\u2192${engineTo}</div>`;
+
+    if (movesMatch) {
+      engineNoteHtml = `<div class="engine-note engine-match">
+        <span class="risk-icon">&#9888;</span>
+        <span>Engine best \u2014 looks suspicious</span>
+      </div>`;
+    } else {
+      engineNoteHtml = `<div class="engine-note engine-differ">
+        <span class="safe-icon">&#10003;</span>
+        <span>Engine prefers ${engineFrom}\u2192${engineTo}</span>
+      </div>`;
+    }
+
+  }
+
+  // Build top engine lines (show when 2+ moves available)
+  let engineLinesHtml = '';
+  if (moves.length >= 2) {
+    const topMoves = moves.slice(0, 5);
+    const chips = topMoves.map(m => {
+      const mFrom = m.from || (m.move ? m.move.substring(0, 2) : '');
+      const mTo = m.to || (m.move ? m.move.substring(2, 4) : '');
+      const mPiece = getPieceAtSquare(fen, mFrom);
+      const mIcon = mPiece ? PIECE_ICONS[mPiece] : '';
+      let evalText = '';
+      if (m.evaluation !== undefined && m.evaluation !== null) {
+        if (typeof m.evaluation === 'string' && m.evaluation.startsWith('M')) {
+          evalText = m.evaluation;
+        } else {
+          const ev = parseFloat(m.evaluation);
+          evalText = (ev >= 0 ? '+' : '') + ev.toFixed(1);
+        }
+      }
+      return `<div class="engine-line-chip">
+        <div class="chip-move">
+          <span class="chip-piece">${mIcon}</span>
+          <span>${mFrom}</span>
+          <span class="chip-arrow">\u2192</span>
+          <span>${mTo}</span>
+        </div>
+        ${evalText ? `<span class="chip-eval">${evalText}</span>` : ''}
+      </div>`;
+    }).join('');
+
+    engineLinesHtml = `<div class="engine-lines">
+      <div class="engine-lines-title">Top engine lines</div>
+      <div class="engine-lines-row">${chips}</div>
+    </div>`;
   }
 
   movesList.innerHTML = `
@@ -914,7 +1018,51 @@ function displayMoves(moves, fen, selectedMove, engineBest) {
       ${pieceName ? `<span class="best-move-name">${pieceName}</span>` : ''}
     </div>
     ${engineNoteHtml}
+    ${engineLinesHtml}
   `;
+}
+
+// ============================================================================
+// SESSION SUSPICION TRACKER
+// ============================================================================
+
+function getSuspicionThreshold(elo) {
+  // Linear ramp: 800 Elo -> 40% accuracy expected, 2400 -> 90%
+  const clamped = Math.max(800, Math.min(2400, elo));
+  return 40 + (clamped - 800) * (50 / 1600);
+}
+
+function updateSuspicionTracker() {
+  const tracker = document.getElementById('session-tracker');
+  const accuracyEl = document.getElementById('tracker-accuracy');
+  const detailEl = document.getElementById('tracker-detail');
+  const barEl = document.getElementById('tracker-bar');
+  const thresholdEl = document.getElementById('tracker-threshold');
+
+  if (sessionCaptures === 0) {
+    tracker.style.display = 'none';
+    return;
+  }
+
+  tracker.style.display = 'flex';
+
+  const accuracy = Math.round((sessionEngineMatches / sessionCaptures) * 100);
+  const currentElo = parseInt(targetEloSlider.value) || 1500;
+  const threshold = getSuspicionThreshold(currentElo);
+
+  accuracyEl.textContent = `${accuracy}%`;
+  detailEl.textContent = `${sessionEngineMatches}/${sessionCaptures}`;
+
+  const overThreshold = accuracy > threshold;
+  const wayOver = accuracy > threshold + 15;
+
+  accuracyEl.className = 'tracker-accuracy' +
+    (wayOver ? ' danger' : overThreshold ? ' warning' : '');
+  barEl.className = 'tracker-bar' +
+    (wayOver ? ' danger' : overThreshold ? ' warning' : '');
+
+  barEl.style.width = `${Math.min(accuracy, 100)}%`;
+  thresholdEl.style.left = `${threshold}%`;
 }
 
 // Render a mini board with arrow showing the move

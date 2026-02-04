@@ -312,6 +312,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === 'REINJECT_CONTENT_SCRIPT') {
+    (async () => {
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!activeTab || !activeTab.url) {
+          sendResponse({ success: false, error: 'No active tab' });
+          return;
+        }
+        // Only inject on chess.com for now
+        if (!activeTab.url.includes('chess.com')) {
+          sendResponse({ success: true, skipped: true });
+          return;
+        }
+        await chrome.scripting.executeScript({
+          target: { tabId: activeTab.id },
+          files: ['src/content/chess-com.js']
+        });
+        console.log('[Chess Study] Re-injected content script into tab', activeTab.id);
+        sendResponse({ success: true });
+      } catch (error) {
+        console.warn('[Chess Study] Content script re-injection failed:', error.message);
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === 'TRIGGER_CAPTURE') {
+    // Relay to panel (content script middle-click or keyboard shortcut)
+    chrome.runtime.sendMessage({ type: 'TRIGGER_CAPTURE' }).catch(() => {});
+    return false;
+  }
+
   return false;
 });
 
@@ -353,136 +386,313 @@ async function handleCapture(sendResponse) {
 }
 
 // ============================================================================
-// DOM EXTRACTION (chess.com)
+// DOM EXTRACTION (universal — tries multiple board patterns)
 // ============================================================================
 
-// Self-contained function injected into chess.com pages via chrome.scripting.executeScript.
+// Self-contained function injected into ANY page via chrome.scripting.executeScript.
 // Must have ZERO external dependencies — everything it needs is defined inside.
+// Tries detection patterns in order: chess.com → react-chessboard → img-piece → generic
 function extractPositionFromDOM() {
+
+  // ── Shared utilities ──────────────────────────────────────────────────────
+
   const PIECE_MAP = {
     wp: 'P', wn: 'N', wb: 'B', wr: 'R', wq: 'Q', wk: 'K',
-    bp: 'p', bn: 'n', bb: 'b', br: 'r', bq: 'q', bk: 'k'
+    bp: 'p', bn: 'n', bb: 'b', br: 'r', bq: 'q', bk: 'k',
+    wP: 'P', wN: 'N', wB: 'B', wR: 'R', wQ: 'Q', wK: 'K',
+    bP: 'p', bN: 'n', bB: 'b', bR: 'r', bQ: 'q', bK: 'k'
   };
 
-  // Find piece elements — try multiple selectors for resilience
-  let pieceElements = document.querySelectorAll('.piece');
+  function boardToFEN(board) {
+    return board.map(rank => {
+      let str = '';
+      let empty = 0;
+      for (const sq of rank) {
+        if (!sq) { empty++; } else {
+          if (empty > 0) { str += empty; empty = 0; }
+          str += sq;
+        }
+      }
+      if (empty > 0) str += empty;
+      return str;
+    }).join('/');
+  }
 
-  // If no pieces found at top level, check inside web components (wc-chess-board)
-  if (!pieceElements.length) {
-    const wcBoard = document.querySelector('wc-chess-board');
-    if (wcBoard?.shadowRoot) {
-      pieceElements = wcBoard.shadowRoot.querySelectorAll('.piece');
+  function validateBoard(pieces) {
+    const hasWhiteKing = pieces.some(p => p.piece === 'K');
+    const hasBlackKing = pieces.some(p => p.piece === 'k');
+    if (!hasWhiteKing || !hasBlackKing) return false;
+    if (pieces.filter(p => p.piece === 'P').length > 8) return false;
+    if (pieces.filter(p => p.piece === 'p').length > 8) return false;
+    if (pieces.length < 2 || pieces.length > 32) return false;
+    return true;
+  }
+
+  function inferCastling(board) {
+    let castling = '';
+    if (board[7][4] === 'K') {
+      if (board[7][7] === 'R') castling += 'K';
+      if (board[7][0] === 'R') castling += 'Q';
     }
-    // Also try chess-board custom element
+    if (board[0][4] === 'k') {
+      if (board[0][7] === 'r') castling += 'k';
+      if (board[0][0] === 'r') castling += 'q';
+    }
+    return castling || '-';
+  }
+
+  function makeResult(board, pieces, turn, source, site) {
+    const boardFen = boardToFEN(board);
+    const castling = inferCastling(board);
+    const fullFen = `${boardFen} ${turn} ${castling} - 0 1`;
+    return {
+      fen: boardFen, fullFen, turn, pieces, castling,
+      source, site,
+      pieceCount: pieces.length,
+      whitePawns: pieces.filter(p => p.piece === 'P').length,
+      blackPawns: pieces.filter(p => p.piece === 'p').length
+    };
+  }
+
+  // ── Pattern 1: chess.com ──────────────────────────────────────────────────
+
+  function tryChessDotCom() {
+    console.log('[Chess Study] Trying pattern: chess.com');
+
+    let pieceElements = document.querySelectorAll('.piece');
+
     if (!pieceElements.length) {
-      const chessBoard = document.querySelector('chess-board');
-      if (chessBoard?.shadowRoot) {
-        pieceElements = chessBoard.shadowRoot.querySelectorAll('.piece');
+      const wcBoard = document.querySelector('wc-chess-board');
+      if (wcBoard?.shadowRoot) {
+        pieceElements = wcBoard.shadowRoot.querySelectorAll('.piece');
+      }
+      if (!pieceElements.length) {
+        const chessBoard = document.querySelector('chess-board');
+        if (chessBoard?.shadowRoot) {
+          pieceElements = chessBoard.shadowRoot.querySelectorAll('.piece');
+        }
       }
     }
-  }
 
-  if (!pieceElements.length) return null;
+    if (!pieceElements.length) {
+      console.log('[Chess Study] Pattern chess.com: no match');
+      return null;
+    }
 
-  const board = Array.from({ length: 8 }, () => Array(8).fill(null));
-  const pieces = [];
+    // chess.com pieces must have square-XY classes — check first element
+    const firstClasses = [...pieceElements[0].classList];
+    if (!firstClasses.some(c => c.startsWith('square-'))) {
+      console.log('[Chess Study] Pattern chess.com: .piece found but no square- classes');
+      return null;
+    }
 
-  for (const el of pieceElements) {
-    if (el.classList.contains('dragging')) continue;
+    const board = Array.from({ length: 8 }, () => Array(8).fill(null));
+    const pieces = [];
 
-    const classes = [...el.classList];
-    const pieceClass = classes.find(c => PIECE_MAP[c]);
-    if (!pieceClass) continue;
+    for (const el of pieceElements) {
+      if (el.classList.contains('dragging')) continue;
+      const classes = [...el.classList];
+      const pieceClass = classes.find(c => PIECE_MAP[c]);
+      if (!pieceClass) continue;
+      const squareClass = classes.find(c => c.startsWith('square-'));
+      if (!squareClass) continue;
+      const digits = squareClass.replace('square-', '');
+      if (digits.length < 2) continue;
+      const fileNum = parseInt(digits[0], 10);
+      const rankNum = parseInt(digits[1], 10);
+      if (fileNum < 1 || fileNum > 8 || rankNum < 1 || rankNum > 8) continue;
+      const fenChar = PIECE_MAP[pieceClass];
+      board[8 - rankNum][fileNum - 1] = fenChar;
+      pieces.push({ square: String.fromCharCode(96 + fileNum) + rankNum, piece: fenChar });
+    }
 
-    const squareClass = classes.find(c => c.startsWith('square-'));
-    if (!squareClass) continue;
+    if (!validateBoard(pieces)) return null;
 
-    const digits = squareClass.replace('square-', '');
-    if (digits.length < 2) continue;
-
-    const fileNum = parseInt(digits[0], 10);
-    const rankNum = parseInt(digits[1], 10);
-    if (fileNum < 1 || fileNum > 8 || rankNum < 1 || rankNum > 8) continue;
-
-    const fenChar = PIECE_MAP[pieceClass];
-    board[8 - rankNum][fileNum - 1] = fenChar;
-
-    const squareName = String.fromCharCode(96 + fileNum) + rankNum;
-    pieces.push({ square: squareName, piece: fenChar });
-  }
-
-  // Must have both kings
-  const hasWhiteKing = pieces.some(p => p.piece === 'K');
-  const hasBlackKing = pieces.some(p => p.piece === 'k');
-  if (!hasWhiteKing || !hasBlackKing) return null;
-
-  // Convert board to FEN
-  const fenRanks = board.map(rank => {
-    let str = '';
-    let empty = 0;
-    for (const sq of rank) {
-      if (!sq) { empty++; } else {
-        if (empty > 0) { str += empty; empty = 0; }
-        str += sq;
+    // Detect turn from highlighted squares
+    let turn = 'w';
+    const highlights = document.querySelectorAll('.highlight');
+    if (highlights.length >= 2) {
+      for (const hl of highlights) {
+        const hlSquare = [...hl.classList].find(c => c.startsWith('square-'));
+        if (!hlSquare) continue;
+        const onSquare = document.querySelectorAll(`.piece.${hlSquare}`);
+        for (const p of onSquare) {
+          const pc = [...p.classList].find(c => PIECE_MAP[c]);
+          if (pc) { turn = pc.startsWith('w') ? 'b' : 'w'; break; }
+        }
+        if (turn !== 'w') break;
       }
     }
-    if (empty > 0) str += empty;
-    return str;
-  });
-  const boardFen = fenRanks.join('/');
 
-  // Detect turn from highlighted squares (last move indicator)
-  let turn = 'w';
-  const highlights = document.querySelectorAll('.highlight');
-  if (highlights.length >= 2) {
-    for (const hl of highlights) {
-      const hlSquare = [...hl.classList].find(c => c.startsWith('square-'));
-      if (!hlSquare) continue;
-      const onSquare = document.querySelectorAll(`.piece.${hlSquare}`);
-      for (const p of onSquare) {
-        const pc = [...p.classList].find(c => PIECE_MAP[c]);
-        if (pc) { turn = pc.startsWith('w') ? 'b' : 'w'; break; }
-      }
-      if (turn !== 'w') break;
+    console.log('[Chess Study] Pattern chess.com: matched!');
+    return makeResult(board, pieces, turn, 'dom-chesscom', 'chess.com');
+  }
+
+  // ── Pattern 2: react-chessboard (data-square + data-piece) ────────────────
+
+  function tryReactChessboard() {
+    console.log('[Chess Study] Trying pattern: react-chessboard');
+
+    const squares = document.querySelectorAll('[data-square]');
+    if (squares.length !== 64) {
+      console.log('[Chess Study] Pattern react-chessboard: no match (' + squares.length + ' data-square elements)');
+      return null;
     }
+
+    const board = Array.from({ length: 8 }, () => Array(8).fill(null));
+    const pieces = [];
+
+    for (const square of squares) {
+      const sq = square.getAttribute('data-square');
+      if (!sq || !/^[a-h][1-8]$/.test(sq)) continue;
+      const file = sq.charCodeAt(0) - 97;
+      const rank = parseInt(sq[1], 10);
+      const pieceEl = square.querySelector('[data-piece]');
+      if (!pieceEl) continue;
+      const code = pieceEl.getAttribute('data-piece');
+      if (!code || !PIECE_MAP[code]) continue;
+      const fenChar = PIECE_MAP[code];
+      board[8 - rank][file] = fenChar;
+      pieces.push({ square: sq, piece: fenChar });
+    }
+
+    if (!validateBoard(pieces)) {
+      console.log('[Chess Study] Pattern react-chessboard: validation failed');
+      return null;
+    }
+
+    console.log('[Chess Study] Pattern react-chessboard: matched!');
+    return makeResult(board, pieces, 'w', 'dom-react-chessboard', 'react-chessboard');
   }
 
-  // Infer castling
-  let castling = '';
-  if (board[7][4] === 'K') {
-    if (board[7][7] === 'R') castling += 'K';
-    if (board[7][0] === 'R') castling += 'Q';
-  }
-  if (board[0][4] === 'k') {
-    if (board[0][7] === 'r') castling += 'k';
-    if (board[0][0] === 'r') castling += 'q';
-  }
-  castling = castling || '-';
+  // ── Pattern 3: img-piece boards (button.square + img src) ─────────────────
 
-  const fullFen = `${boardFen} ${turn} ${castling} - 0 1`;
+  function tryImgPieceBoard() {
+    console.log('[Chess Study] Trying pattern: img-piece');
 
-  return {
-    fen: boardFen,
-    fullFen,
-    turn,
-    pieces,
-    castling,
-    source: 'dom',
-    site: 'chess.com',
-    pieceCount: pieces.length,
-    whitePawns: pieces.filter(p => p.piece === 'P').length,
-    blackPawns: pieces.filter(p => p.piece === 'p').length
-  };
+    const squareButtons = document.querySelectorAll('button.square');
+    if (squareButtons.length !== 64) {
+      console.log('[Chess Study] Pattern img-piece: no match (' + squareButtons.length + ' button.square elements)');
+      return null;
+    }
+
+    const IMG_PIECES = {
+      white_king: 'K', white_queen: 'Q', white_rook: 'R',
+      white_bishop: 'B', white_knight: 'N', white_pawn: 'P',
+      black_king: 'k', black_queen: 'q', black_rook: 'r',
+      black_bishop: 'b', black_knight: 'n', black_pawn: 'p'
+    };
+
+    const board = Array.from({ length: 8 }, () => Array(8).fill(null));
+    const pieces = [];
+
+    for (let i = 0; i < 64; i++) {
+      const row = Math.floor(i / 8);
+      const col = i % 8;
+      const rank = 8 - row;
+      const file = col;
+      const img = squareButtons[i].querySelector('img');
+      if (!img) continue;
+      const src = (img.getAttribute('src') || '').toLowerCase();
+      let fenChar = null;
+      for (const [pattern, fen] of Object.entries(IMG_PIECES)) {
+        if (src.includes(pattern)) { fenChar = fen; break; }
+      }
+      if (!fenChar) continue;
+      board[8 - rank][file] = fenChar;
+      pieces.push({ square: String.fromCharCode(97 + file) + rank, piece: fenChar });
+    }
+
+    if (!validateBoard(pieces)) {
+      console.log('[Chess Study] Pattern img-piece: validation failed');
+      return null;
+    }
+
+    const debugFen = boardToFEN(board);
+    console.log('[Chess Study] Pattern img-piece: matched! FEN:', debugFen);
+    console.log('[Chess Study] Pieces found:', JSON.stringify(pieces.slice(0, 10)), '... total:', pieces.length);
+    return makeResult(board, pieces, 'w', 'dom-img-pieces', 'img-piece board');
+  }
+
+  // ── Pattern 4: generic heuristic ──────────────────────────────────────────
+
+  function tryGenericBoard() {
+    console.log('[Chess Study] Trying pattern: generic');
+
+    const candidates = document.querySelectorAll('[data-square], [data-sq]');
+    const validSquares = [...candidates].filter(el => {
+      const sq = el.getAttribute('data-square') || el.getAttribute('data-sq');
+      return sq && /^[a-h][1-8]$/.test(sq);
+    });
+
+    if (validSquares.length < 32) {
+      console.log('[Chess Study] Pattern generic: no match (' + validSquares.length + ' valid square elements)');
+      return null;
+    }
+
+    const board = Array.from({ length: 8 }, () => Array(8).fill(null));
+    const pieces = [];
+
+    for (const el of validSquares) {
+      const sq = el.getAttribute('data-square') || el.getAttribute('data-sq');
+      const file = sq.charCodeAt(0) - 97;
+      const rank = parseInt(sq[1], 10);
+
+      // Try data-piece attribute (on element or child)
+      const dataPiece = el.getAttribute('data-piece') ||
+                        el.querySelector('[data-piece]')?.getAttribute('data-piece');
+      if (dataPiece && PIECE_MAP[dataPiece]) {
+        const fenChar = PIECE_MAP[dataPiece];
+        board[8 - rank][file] = fenChar;
+        pieces.push({ square: sq, piece: fenChar });
+        continue;
+      }
+
+      // Try img src/alt parsing
+      const img = el.querySelector('img');
+      if (img) {
+        const text = ((img.getAttribute('src') || '') + ' ' + (img.getAttribute('alt') || '')).toLowerCase();
+        const imgMap = {
+          white_king: 'K', white_queen: 'Q', white_rook: 'R',
+          white_bishop: 'B', white_knight: 'N', white_pawn: 'P',
+          black_king: 'k', black_queen: 'q', black_rook: 'r',
+          black_bishop: 'b', black_knight: 'n', black_pawn: 'p'
+        };
+        for (const [pattern, fen] of Object.entries(imgMap)) {
+          if (text.includes(pattern)) {
+            board[8 - rank][file] = fen;
+            pieces.push({ square: sq, piece: fen });
+            break;
+          }
+        }
+      }
+    }
+
+    if (!validateBoard(pieces)) {
+      console.log('[Chess Study] Pattern generic: validation failed');
+      return null;
+    }
+
+    console.log('[Chess Study] Pattern generic: matched!');
+    return makeResult(board, pieces, 'w', 'dom-generic', 'detected board');
+  }
+
+  // ── Run patterns in order ─────────────────────────────────────────────────
+
+  return tryChessDotCom()
+      || tryReactChessboard()
+      || tryImgPieceBoard()
+      || tryGenericBoard();
 }
 
 async function tryDomExtraction(userColor) {
   try {
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!activeTab?.url || !activeTab.url.includes('chess.com')) {
+    if (!activeTab?.url) {
       return null;
     }
 
-    console.log('[Chess Study] Chess.com detected, trying DOM extraction...');
+    console.log('[Chess Study] Trying DOM extraction on', activeTab.url);
 
     // Inject extraction function directly — fresh every time, no content script dependency
     const injectionResults = await chrome.scripting.executeScript({
@@ -496,13 +706,14 @@ async function tryDomExtraction(userColor) {
       return null;
     }
 
-    console.log('[Chess Study] DOM extraction successful:', pos.pieceCount, 'pieces');
-    await debugLog('info', 'DOM', 'Position extracted from chess.com DOM', {
+    console.log('[Chess Study] DOM extraction successful via', pos.source + ':', pos.pieceCount, 'pieces');
+    await debugLog('info', 'DOM', `Position extracted via ${pos.source}`, {
       pieceCount: pos.pieceCount,
       whitePawns: pos.whitePawns,
       blackPawns: pos.blackPawns,
       turn: pos.turn,
-      fen: pos.fullFen
+      fen: pos.fullFen,
+      source: pos.source
     });
 
     // Validate the extracted FEN
@@ -537,8 +748,8 @@ async function tryDomExtraction(userColor) {
       fenForStockfish,
       turn: pos.turn,
       pieces: pos.pieces,
-      description: `Position read from chess.com (${pos.pieceCount} pieces)`,
-      source: 'dom',
+      description: `Position read from ${pos.site} (${pos.pieceCount} pieces)`,
+      source: pos.source,
       analysisNote
     };
 
@@ -595,7 +806,8 @@ async function handleAnalysis(imageData, options = {}) {
         selectedMove: selection.selected,
         engineBest: selection.engineBest,
         analysisNote: domResult.analysisNote,
-        source: 'dom'
+        source: 'dom',
+        openrouterCost: 0
       };
     }
 
@@ -652,10 +864,14 @@ async function handleAnalysis(imageData, options = {}) {
 
     const baseVisionPrompt = buildVisionPrompt();
 
+    // Track OpenRouter cost across calls (including retries)
+    let totalOpenrouterCost = 0;
+
     // Single vision call with full screenshot
     let visionResult;
     try {
       visionResult = await analyzeWithVision(imageData, config.apiKey, provider, config.model, baseVisionPrompt);
+      totalOpenrouterCost += visionResult.openrouterCost || 0;
     } catch (error) {
       return { error: `Vision analysis failed: ${error.message}` };
     }
@@ -675,6 +891,7 @@ async function handleAnalysis(imageData, options = {}) {
       const retryPrompt = buildVisionRetryPrompt(evaluation?.validation?.error);
       try {
         visionResult = await analyzeWithVision(imageData, config.apiKey, provider, config.model, retryPrompt);
+        totalOpenrouterCost += visionResult.openrouterCost || 0;
         evaluation = evaluateVisionResults([{ ...visionResult, provider }], normalizeOptions)[0];
       } catch (error) {
         return { error: `Vision retry failed: ${error.message}` };
@@ -738,7 +955,8 @@ async function handleAnalysis(imageData, options = {}) {
       selectedMove: selection.selected,
       engineBest: selection.engineBest,
       analysisNote,
-      source: 'vision'
+      source: 'vision',
+      openrouterCost: totalOpenrouterCost
     };
 
   } catch (error) {
@@ -903,6 +1121,26 @@ async function analyzeWithVision(imageDataUrl, apiKey, provider = 'anthropic', m
 
     data = await response.json();
     const text = data.choices?.[0]?.message?.content || '';
+    const generationId = data.id;
+
+    // Query OpenRouter generation endpoint for actual cost
+    let openrouterCost = 0;
+    if (generationId) {
+      try {
+        const costResp = await fetch(`https://openrouter.ai/api/v1/generation?id=${generationId}`, {
+          headers: { 'Authorization': `Bearer ${config.apiKey}` }
+        });
+        if (costResp.ok) {
+          const costData = await costResp.json();
+          openrouterCost = costData.data?.total_cost || 0;
+          await debugLog('info', 'Vision/OpenRouter', 'Generation cost', {
+            generationId, totalCost: openrouterCost
+          });
+        }
+      } catch (e) {
+        await debugLog('warn', 'Vision/OpenRouter', 'Cost query failed', { error: e.message });
+      }
+    }
 
     // Log the FULL raw response for debugging
     await debugLog('info', 'Vision/OpenRouter', 'Raw API response', {
@@ -928,7 +1166,8 @@ async function analyzeWithVision(imageDataUrl, apiKey, provider = 'anthropic', m
           blackPawns: result.blackPawns,
           description: result.description,
           confidence: result.confidence,
-          visionError: result.error
+          visionError: result.error,
+          openrouterCost
         };
       } else {
         await debugLog('error', 'Vision/OpenRouter', 'No JSON found in response', { rawText: text });

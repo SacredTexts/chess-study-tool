@@ -23,6 +23,19 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+logs/
+logs/*.json
+logs/chat.json
+logs/notification.json
+logs/post_tool_use.json
+logs/pre_tool_use.json
+logs/stop.json
+logs/subagent_stop.json
+
+# Claude memory/state (machine-generated)
+.claude/memories/
+.claude/memories/*.json
+.claude/memories/project_memory.json
 
 # Chrome extension development
 *.pem
