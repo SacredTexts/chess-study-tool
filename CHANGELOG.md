@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.8.1] - 2026-02-04
+
+### Changed
+- **Engine note restored** - "Engine prefers x→y" shown as a second row below the move widget with lime-green border, only when the selected move differs from engine best
+- **Header flattened** - Removed White/Black text label from toggle switch; all header items now evenly spaced in a single flex row
+- Removed unused header wrapper divs and CSS
+
+## [3.8.0] - 2026-02-04
+
+### Changed
+- **Condensed UI for small screens** - Removed status bar, thumbnail, and position sections from main content; moved them into a floating popover toggled by a header status dot
+- **Header status dot** replaces version badge - shows green (success), red (error), blue pulse (loading); click to reveal analysis details, FEN, and screenshot thumbnail
+- **Compact best move widget** - Single-line layout with piece icon, move notation, and piece name; removed "Suggested Move" label and engine comparison note
+- Popover auto-closes when new capture starts; click outside to dismiss
+
+### Removed
+- Version badge from header (version still shown in settings footer)
+- "Confirm this shows your chess board" hint text
+- "Best Move" section title
+
 ## [3.7.0] - 2026-02-04
 
 ### Added

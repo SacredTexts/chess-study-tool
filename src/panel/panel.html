@@ -21,47 +21,41 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      position: relative;
     }
 
     /* ============ HEADER ============ */
     .header {
-      padding: 16px 20px;
+      padding: 12px 16px;
       background: rgba(0, 0, 0, 0.3);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       align-items: center;
       justify-content: space-between;
-    }
-
-    .header-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .header-title h1 {
-      font-size: 16px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .header-title .icon {
-      font-size: 20px;
-    }
-
-    .version-badge {
-      font-size: 10px;
-      color: #888;
-      background: rgba(255,255,255,0.1);
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 8px;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
       gap: 12px;
+    }
+
+    .header-status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #666;
+      cursor: pointer;
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+
+    .header-status-dot.loading {
+      background: #3498db;
+      animation: pulse 1.5s infinite;
+    }
+
+    .header-status-dot.success {
+      background: #2ecc71;
+    }
+
+    .header-status-dot.error {
+      background: #e74c3c;
     }
 
     .header-shortcut {
@@ -177,51 +171,60 @@
     }
 
     /* Header side toggle (compact) */
-    .header-side-toggle {
+    /* ============ STATUS POPOVER ============ */
+    .status-popover {
+      position: absolute;
+      top: 56px;
+      left: 12px;
+      right: 12px;
+      z-index: 100;
+      background: #1a1a2e;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       display: flex;
-      align-items: center;
-      gap: 6px;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    /* ============ STATUS ============ */
-    .status-bar {
+    .popover-status {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 14px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 8px;
-      margin-bottom: 16px;
     }
 
-    /* ============ THUMBNAIL ============ */
-    .thumbnail-section {
-      text-align: center;
-    }
-
-    .thumbnail-container {
+    .popover-thumbnail .thumbnail-container {
       background: rgba(0, 0, 0, 0.3);
       border-radius: 8px;
-      padding: 8px;
+      padding: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      border: 2px solid rgba(52, 152, 219, 0.3);
+      border: 1px solid rgba(52, 152, 219, 0.3);
     }
 
-    .thumbnail-container img {
+    .popover-thumbnail .thumbnail-container img {
       max-width: 100%;
-      max-height: 200px;
+      max-height: 120px;
       border-radius: 4px;
       object-fit: contain;
     }
 
-    .thumbnail-hint {
+    .popover-position .fen-display {
+      font-family: 'Courier New', monospace;
       font-size: 11px;
-      color: #666;
-      margin-top: 8px;
-      font-style: italic;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 6px 8px;
+      border-radius: 6px;
+      word-break: break-all;
+      color: #aaa;
+    }
+
+    .popover-position .section-title {
+      font-size: 10px;
+      margin-bottom: 6px;
     }
 
     .status-dot {
@@ -283,31 +286,23 @@
     }
 
     .best-move-container {
-      padding: 10px 12px;
+      padding: 4px 10px;
       background: linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(46, 204, 113, 0.05) 100%);
       border: 2px solid rgba(46, 204, 113, 0.4);
       border-radius: 8px;
-      text-align: center;
-    }
-
-    .best-move-label {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      color: #2ecc71;
-      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .best-move-content {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .best-move-piece {
-      font-size: 24px;
+      font-size: 18px;
       line-height: 1;
     }
 
@@ -324,8 +319,8 @@
     .best-move-notation {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 16px;
+      gap: 4px;
+      font-size: 14px;
       font-weight: 600;
       color: #fff;
     }
@@ -346,14 +341,16 @@
     .best-move-name {
       font-size: 11px;
       color: #888;
-      margin-top: 4px;
+      margin-left: auto;
     }
 
     .engine-note {
-      font-size: 10px;
-      color: #888;
-      margin-top: 4px;
-      font-style: italic;
+      padding: 4px 10px;
+      border: 2px solid #65a30d;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #fff;
     }
 
     /* ============ MINI BOARD ============ */
@@ -558,13 +555,6 @@
       font-size: 11px;
       color: #888;
       font-weight: 500;
-    }
-
-    .side-label-color {
-      font-size: 12px;
-      color: #fff;
-      font-weight: 600;
-      min-width: 40px;
     }
 
     .toggle-switch {
@@ -1006,53 +996,41 @@
 <body>
   <!-- HEADER -->
   <div class="header">
-    <div class="header-title">
-      <button class="header-capture-btn" id="capture-btn">
-        <span class="btn-text">&#128248; Capture</span>
-        <span class="spinner"></span>
-      </button>
-      <span class="version-badge">v3.7.0</span>
+    <button class="header-capture-btn" id="capture-btn">
+      <span class="btn-text">&#128248; Capture</span>
+      <span class="spinner"></span>
+    </button>
+    <span class="header-status-dot" id="header-status-dot" title="Click for details"></span>
+    <label class="toggle-switch" title="Toggle White/Black">
+      <input type="checkbox" id="side-switch">
+      <span class="toggle-slider"></span>
+    </label>
+    <kbd class="header-shortcut" title="Middle-click to capture" style="line-height: 1.1; text-align: center;">Mouse<br>Wheel</kbd>
+    <button class="settings-btn" id="settings-toggle" title="Settings">&#9881;&#65039;</button>
+    <button class="close-btn" id="close-btn" title="Close Window">&#10005;</button>
+  </div>
+
+  <!-- STATUS POPOVER -->
+  <div class="status-popover" id="status-popover" style="display: none;">
+    <div class="popover-status">
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-text" id="status-text">Ready - click capture to analyze a position</span>
     </div>
-    <div class="header-right">
-      <div class="header-side-toggle">
-        <label class="toggle-switch">
-          <input type="checkbox" id="side-switch">
-          <span class="toggle-slider"></span>
-        </label>
-        <span class="side-label-color" id="side-color-label">White</span>
+    <div class="popover-thumbnail" id="popover-thumbnail" style="display: none;">
+      <div class="thumbnail-container">
+        <img id="thumbnail-img" src="" alt="Captured screenshot">
       </div>
-      <kbd class="header-shortcut" title="Middle-click to capture" style="line-height: 1.1; text-align: center;">Mouse<br>Wheel</kbd>
-      <button class="settings-btn" id="settings-toggle" title="Settings">&#9881;&#65039;</button>
-      <button class="close-btn" id="close-btn" title="Close Window">&#10005;</button>
+    </div>
+    <div class="popover-position" id="popover-position" style="display: none;">
+      <div class="section-title">Position</div>
+      <div class="fen-display" id="fen-display">-</div>
     </div>
   </div>
 
   <!-- MAIN CONTENT -->
   <div class="main-content" id="main-content">
-    <!-- Screenshot Thumbnail -->
-    <div class="section thumbnail-section" id="thumbnail-section" style="display: none;">
-      <div class="section-title">Captured Screenshot</div>
-      <div class="thumbnail-container">
-        <img id="thumbnail-img" src="" alt="Captured screenshot">
-      </div>
-      <p class="thumbnail-hint">Confirm this shows your chess board</p>
-    </div>
-
-    <!-- Status -->
-    <div class="status-bar">
-      <span class="status-dot" id="status-dot"></span>
-      <span class="status-text" id="status-text">Ready - click capture to analyze a position</span>
-    </div>
-
-    <!-- Position Info -->
-    <div class="section" id="position-section" style="display: none;">
-      <div class="section-title">Position</div>
-      <div class="fen-display" id="fen-display">-</div>
-    </div>
-
     <!-- Best Move -->
-    <div class="section" id="moves-section" style="display: none;">
-      <div class="section-title">Best Move</div>
+    <div id="moves-section" style="display: none;">
       <div class="moves-list" id="moves-list">
         <div class="placeholder">Capture a position to see analysis</div>
       </div>
@@ -1269,7 +1247,7 @@
 
     <!-- Version Footer -->
     <div class="settings-footer">
-      <span class="settings-version">Chess Study Tool v3.7.0</span>
+      <span class="settings-version">Chess Study Tool v3.8.1</span>
       <span class="settings-credits">Powered by Claude Vision & Lichess</span>
     </div>
   </div>

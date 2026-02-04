@@ -34,8 +34,32 @@
       "content": "zip is fine and name it chess-study-tool",
       "added_at": "2026-02-04T06:38:39.634849",
       "source": "realtime_capture"
+    },
+    {
+      "type": "claude_response",
+      "content": "`★ Insight ─────────────────────────────────────`\nThe code reviewer confirmed all changes are clean — no broken references, no orphaned CSS, proper event wiring. The defensive `if` guards on `turnDisp",
+      "added_at": "2026-02-04T07:12:11.241209",
+      "source": "realtime_capture"
+    },
+    {
+      "type": "message",
+      "content": "in the white / dark switch - remove the text and make more space between the green dot and the switch so everything on the header is evenly spaced",
+      "added_at": "2026-02-04T07:12:11.241245",
+      "source": "realtime_capture"
+    },
+    {
+      "type": "claude_response",
+      "content": "Done. Here's what changed in **v3.8.1**:\n\n| Change | Detail |\n|--------|--------|\n| **Engine note restored** | \"Engine prefers e2→e4\" appears as a second row below the move widget, white text with `#6",
+      "added_at": "2026-02-04T07:25:11.565952",
+      "source": "realtime_capture"
+    },
+    {
+      "type": "message",
+      "content": "zip the extension",
+      "added_at": "2026-02-04T07:25:11.565976",
+      "source": "realtime_capture"
     }
   ],
   "created_at": "2026-01-26T22:12:09.555540",
-  "updated_at": "2026-02-04T06:38:39.634850"
+  "updated_at": "2026-02-04T07:25:11.565978"
 }

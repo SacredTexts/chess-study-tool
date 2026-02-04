@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chess Study Tool - AI Analysis",
-  "version": "3.7.0",
+  "version": "3.8.1",
   "description": "Chess learning tool - reads board positions from chess.com or screenshots, analyzes with Stockfish, and suggests the best move.",
 
   "permissions": [

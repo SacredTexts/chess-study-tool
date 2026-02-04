@@ -1102,5 +1102,37 @@
     "permission_mode": "bypassPermissions",
     "hook_event_name": "Stop",
     "stop_hook_active": false
+  },
+  {
+    "session_id": "6b7ca74d-bc2a-4350-b3d9-73fc05308458",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/6b7ca74d-bc2a-4350-b3d9-73fc05308458.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "6b7ca74d-bc2a-4350-b3d9-73fc05308458",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/6b7ca74d-bc2a-4350-b3d9-73fc05308458.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "6b7ca74d-bc2a-4350-b3d9-73fc05308458",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/6b7ca74d-bc2a-4350-b3d9-73fc05308458.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
+  },
+  {
+    "session_id": "6b7ca74d-bc2a-4350-b3d9-73fc05308458",
+    "transcript_path": "/Users/forest/.claude/projects/-Applications-ServBay-www-chess-study-tool/6b7ca74d-bc2a-4350-b3d9-73fc05308458.jsonl",
+    "cwd": "/Applications/ServBay/www/chess-study-tool",
+    "permission_mode": "bypassPermissions",
+    "hook_event_name": "Stop",
+    "stop_hook_active": false
   }
 ]

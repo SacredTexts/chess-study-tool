@@ -1,5 +1,5 @@
 /**
- * Chess Study Tool - Panel Script (v3.7)
+ * Chess Study Tool - Panel Script (v3.8.1)
  *
  * Standalone learning tool that:
  * 1. Captures screenshots on user request
@@ -28,11 +28,15 @@ const fenRerunBtn = document.getElementById('fen-rerun');
 const movesList = document.getElementById('moves-list');
 const chessBoard = document.getElementById('chess-board');
 
-const positionSection = document.getElementById('position-section');
 const movesSection = document.getElementById('moves-section');
 const boardSection = document.getElementById('board-section');
-const thumbnailSection = document.getElementById('thumbnail-section');
 const thumbnailImg = document.getElementById('thumbnail-img');
+
+// Popover elements
+const headerStatusDot = document.getElementById('header-status-dot');
+const statusPopover = document.getElementById('status-popover');
+const popoverThumbnail = document.getElementById('popover-thumbnail');
+const popoverPosition = document.getElementById('popover-position');
 
 const settingsToggle = document.getElementById('settings-toggle');
 const settingsPanel = document.getElementById('settings-panel');
@@ -120,6 +124,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   // API check button
   checkApisBtn.addEventListener('click', checkAllAPIs);
 
+  // Header status dot - toggle popover
+  headerStatusDot.addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePopover();
+  });
+
+  // Click outside popover to close
+  document.addEventListener('click', (e) => {
+    if (popoverOpen && !statusPopover.contains(e.target) && e.target !== headerStatusDot) {
+      closePopover();
+    }
+  });
+
+  statusPopover.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+
   // Header indicators click - go to settings (removed in v3.3, guarded)
   if (headerIndicators) headerIndicators.addEventListener('click', showSettings);
 
@@ -150,7 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Side toggle switch - "I am White" / "I am Black"
   sideSwitch.addEventListener('change', async () => {
     boardFlipped = sideSwitch.checked;
-    sideColorLabel.textContent = boardFlipped ? 'Black' : 'White';
+    if (sideColorLabel) sideColorLabel.textContent = boardFlipped ? 'Black' : 'White';
     updateBoardOrientation();
     if (currentFen && currentMoves) {
       renderChessBoard(currentFen, currentMoves[0]);
@@ -272,7 +293,7 @@ async function loadSettings() {
   // Board flip state (display only)
   boardFlipped = !!settings.boardFlipped;
   sideSwitch.checked = boardFlipped;
-  sideColorLabel.textContent = boardFlipped ? 'Black' : 'White';
+  if (sideColorLabel) sideColorLabel.textContent = boardFlipped ? 'Black' : 'White';
   updateBoardOrientation();
 
   // Elo slider
@@ -330,7 +351,24 @@ async function saveSettings() {
   updateStatus('Settings saved!', 'success');
 }
 
+// ============================================================================
+// STATUS POPOVER
+// ============================================================================
+
+let popoverOpen = false;
+
+function togglePopover() {
+  popoverOpen = !popoverOpen;
+  statusPopover.style.display = popoverOpen ? 'flex' : 'none';
+}
+
+function closePopover() {
+  popoverOpen = false;
+  statusPopover.style.display = 'none';
+}
+
 function showSettings() {
+  closePopover();
   mainContent.classList.add('hidden');
   settingsPanel.classList.add('active');
 }
@@ -496,6 +534,7 @@ async function handleCapture() {
 
   captureBtn.classList.add('loading');
   captureBtn.disabled = true;
+  closePopover();
   updateStatus('Capturing screen...', 'loading');
   clearResults();
 
@@ -506,13 +545,13 @@ async function handleCapture() {
       throw new Error(response?.error || 'Failed to capture screenshot');
     }
 
-    thumbnailSection.style.display = 'block';
+    popoverThumbnail.style.display = 'block';
     thumbnailImg.src = response.imageData;
 
     updateStatus('Analyzing position...', 'loading');
 
     // Show sections with loading state
-    positionSection.style.display = 'block';
+    popoverPosition.style.display = 'block';
     fenDisplay.textContent = 'Analyzing...';
     if (turnDisplay) turnDisplay.textContent = '...';
 
@@ -537,7 +576,7 @@ async function handleCapture() {
 
     if (analysisResponse.error) {
       if (analysisResponse.fen) {
-        positionSection.style.display = 'block';
+        popoverPosition.style.display = 'block';
         fenDisplay.textContent = analysisResponse.fen;
         if (turnDisplay) {
           turnDisplay.textContent = analysisResponse.turn === 'w' ? 'White' : 'Black';
@@ -572,6 +611,8 @@ function clearResults() {
   if (fenInput) fenInput.value = '';
   movesList.innerHTML = '';
   chessBoard.innerHTML = '';
+  popoverThumbnail.style.display = 'none';
+  popoverPosition.style.display = 'none';
 }
 
 // ============================================================================
@@ -719,7 +760,7 @@ async function rerunFromFen() {
     return;
   }
 
-  positionSection.style.display = 'block';
+  popoverPosition.style.display = 'block';
   movesSection.style.display = 'block';
   boardSection.style.display = 'block';
 
@@ -759,7 +800,7 @@ async function rerunFromFen() {
 function displayResults(data) {
   console.log('[Panel] Displaying results:', data);
 
-  positionSection.style.display = 'block';
+  popoverPosition.style.display = 'block';
   movesSection.style.display = 'block';
   boardSection.style.display = 'block';
 
@@ -853,20 +894,15 @@ function displayMoves(moves, fen, selectedMove, engineBest) {
   const pieceName = piece ? PIECE_NAMES[piece] : '';
   const isWhitePiece = piece && piece === piece.toUpperCase();
 
-  // Check if selected move differs from engine best
   let engineNoteHtml = '';
   if (engineBest && engineBest.move !== move.move) {
     const engineFrom = engineBest.from || engineBest.move.substring(0, 2);
     const engineTo = engineBest.to || engineBest.move.substring(2, 4);
-    const selectedEval = typeof move.evaluation === 'number' ? move.evaluation : 0;
-    const bestEval = typeof engineBest.evaluation === 'number' ? engineBest.evaluation : 0;
-    const cpDiff = Math.round((bestEval - selectedEval) * 100);
-    engineNoteHtml = `<div class="engine-note">Engine prefers ${engineFrom}\u2192${engineTo}${cpDiff > 0 ? ` (+${cpDiff}cp)` : ''}</div>`;
+    engineNoteHtml = `<div class="engine-note">Engine prefers ${engineFrom}\u2192${engineTo}</div>`;
   }
 
   movesList.innerHTML = `
     <div class="best-move-container">
-      <div class="best-move-label">Suggested Move</div>
       <div class="best-move-content">
         <span class="best-move-piece ${isWhitePiece ? 'white-piece' : 'black-piece'}">${pieceIcon}</span>
         <div class="best-move-notation">
@@ -875,9 +911,9 @@ function displayMoves(moves, fen, selectedMove, engineBest) {
           <span class="best-move-to">${toSquare}</span>
         </div>
       </div>
-      ${pieceName ? `<div class="best-move-name">${pieceName}</div>` : ''}
-      ${engineNoteHtml}
+      ${pieceName ? `<span class="best-move-name">${pieceName}</span>` : ''}
     </div>
+    ${engineNoteHtml}
   `;
 }
 
@@ -1104,6 +1140,7 @@ function getSquareHighlight(square, fromSquare, toSquare) {
 function updateStatus(text, type = 'info') {
   statusText.textContent = text;
   statusDot.className = `status-dot ${type}`;
+  headerStatusDot.className = `header-status-dot ${type}`;
 }
 
 // ============================================================================
